@@ -27,11 +27,12 @@ namespace SimpleOrbWalker
             None,
         }
 
-        private static readonly string[] AttackResets = { "dariusnoxiantacticsonh", "fioraflurry", "garenq", "hecarimrapidslash", "jaxempowertwo", "jaycehypercharge", "leonashieldofdaybreak", "monkeykingdoubleattack", "mordekaisermaceofspades", "nasusq", "nautiluspiercinggaze", "netherblade", "parley", "poppydevastatingblow", "powerfist", "renektonpreexecute", "rengarq", "shyvanadoubleattack", "sivirw", "takedown", "talonnoxiandiplomacy", "trundletrollsmash", "vaynetumble", "vie", "volibearq", "xenzhaocombotarget", "yorickspectral" };
-        private static readonly string[] NoAttacks = { "jarvanivcataclysmattack", "monkeykingdoubleattack", "shyvanadoubleattack", "shyvanadoubleattackdragon", "zyragraspingplantattack", "zyragraspingplantattack2", "zyragraspingplantattackfire", "zyragraspingplantattack2fire" };
-        private static readonly string[] Attacks = { "caitlynheadshotmissile", "frostarrow", "garenslash2", "kennenmegaproc", "lucianpassiveattack", "masteryidoublestrike", "quinnwenhanced", "renektonexecute", "renektonsuperexecute", "rengarnewpassivebuffdash", "trundleq", "xenzhaothrust", "viktorqbuff", "xenzhaothrust2", "xenzhaothrust3" };
+        public static string[] AttackResets = { "dariusnoxiantacticsonh", "fioraflurry", "garenq", "hecarimrapidslash", "jaxempowertwo", "jaycehypercharge", "leonashieldofdaybreak", "monkeykingdoubleattack", "mordekaisermaceofspades", "nasusq", "nautiluspiercinggaze", "netherblade", "parley", "poppydevastatingblow", "powerfist", "renektonpreexecute", "rengarq", "shyvanadoubleattack", "sivirw", "takedown", "talonnoxiandiplomacy", "trundletrollsmash", "vaynetumble", "vie", "volibearq", "xenzhaocombotarget", "yorickspectral" };
+        public static string[] NoAttacks = { "jarvanivcataclysmattack", "monkeykingdoubleattack", "shyvanadoubleattack", "shyvanadoubleattackdragon", "zyragraspingplantattack", "zyragraspingplantattack2", "zyragraspingplantattackfire", "zyragraspingplantattack2fire" };
+        public static string[] Attacks = { "caitlynheadshotmissile", "frostarrow", "garenslash2", "kennenmegaproc", "lucianpassiveattack", "masteryidoublestrike", "quinnwenhanced", "renektonexecute", "renektonsuperexecute", "rengarnewpassivebuffdash", "trundleq", "xenzhaothrust", "viktorqbuff", "xenzhaothrust2", "xenzhaothrust3" };
 
         private static bool _drawing = true;
+        private static bool _enabled = true;
         private static bool _attack = true;
         private static bool _movement = true;
         private static bool _disableNextAttack;
@@ -40,8 +41,8 @@ namespace SimpleOrbWalker
         private static Obj_AI_Base _lastTarget;
         private static int _lastMovement;
         private static int _windup;
-        private static int _currentMode = 0;
-        private static int _currentAttackMode = 1;
+        public static int _currentMode = 0;
+        public static int _currentAttackMode = 1;
         private static int lastRealAttack;
         
         public delegate void BeforeAttackEvenH(BeforeAttackEventArgs args);
@@ -58,9 +59,10 @@ namespace SimpleOrbWalker
         {
             Config = ConfigMenu;
 
-            Config.AddItem(new MenuItem("Enabled", "Enabled").SetValue(true));
+            Config.AddItem(new MenuItem("Enabled", "Enabled").SetValue<bool>(_enabled));
 
             var menuDrawing = new Menu("Drawing", "Drawing");
+            menuDrawing.AddItem(new MenuItem("Drawing", "Drawing").SetValue<bool>(_drawing));
             menuDrawing.AddItem(new MenuItem("DrawAARange", "AA Circle").SetValue(new Circle(true, Color.FloralWhite)));
             menuDrawing.AddItem(new MenuItem("DrawEnemyAARange", "AA Circle Enemy").SetValue(new Circle(true, Color.Pink)));
             menuDrawing.AddItem(new MenuItem("DrawHoldzone", "HoldZone").SetValue(new Circle(true, Color.FloralWhite)));            
@@ -97,6 +99,16 @@ namespace SimpleOrbWalker
                 return;
         }
 
+        public static void EnableOrbWalker()
+        {
+            _enabled = true;
+        }
+
+        public static void DisableOrbwalker()
+        {
+            _enabled = false;
+        }
+
         public static void DisableAttacks()
         {
             _attack = false;
@@ -105,6 +117,36 @@ namespace SimpleOrbWalker
         public static void EnableAttacks()
         {
             _attack = true;
+        }
+
+        public static int GetCurrentOrbWalkMode()
+        {
+            return _currentMode;
+        }
+
+        public static int GetCurrentAutoAttackMode()
+        {
+            return _currentAttackMode;
+        }
+
+        public static void SetCurrentOrbWalkMode(int CurrentMode)
+        {
+            _currentMode = CurrentMode;
+        }
+
+        public static void SetCurrentAutoAttackMode(int AAMode)
+        {
+            _currentAttackMode = AAMode;
+        }
+
+        public static bool GetDrawing()
+        {
+            return _drawing;
+        }
+        
+        public static void SetDrawing(bool OnOff)
+        {
+            _drawing = OnOff;
         }
 
         public static void ForceTarget(Obj_AI_Base target)
@@ -370,7 +412,7 @@ namespace SimpleOrbWalker
 
         private static void OnUpdate(EventArgs args)
         {
-            if (MenuGUI.IsChatOpen) return;
+            if (MenuGUI.IsChatOpen || !Config.Item("Enabled").GetValue<bool>()) return;
 
             Obj_AI_Base target = GetPossibleTarget();
             Orbwalk(target, Game.CursorPos);
@@ -378,6 +420,7 @@ namespace SimpleOrbWalker
 
         private static void OnDraw(EventArgs args)
         {
+            _drawing = Config.Item("Drawing").GetValue<bool>();
             if (!_drawing) return;
 
             if (Config.Item("DrawAARange").GetValue<Circle>().Active)
