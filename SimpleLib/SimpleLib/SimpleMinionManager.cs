@@ -14,7 +14,7 @@ namespace SimpleLib
 {
     namespace SimpleMinionManager
     {
-        class SMM
+        public class SMM
         {
             public enum MinionOrderTypes
             {
@@ -226,16 +226,20 @@ namespace SimpleLib
 
             private static int GetPrioretyForMinions(string targetName)
             {
-                     if (targetName.Contains("ranged") || targetName.Contains("wizard") || targetName.Contains("caster")) return 1;
-                else if (targetName.Contains("melee")) return 2;
+                if (targetName.Contains("super")) return 4;
                 else if (targetName.Contains("siege") || targetName.Contains("cannon")) return 3;
-                else if (targetName.Contains("super")) return 4;
+                else if (targetName.Contains("melee")) return 2;
+                else if (targetName.Contains("ranged") || targetName.Contains("wizard") || targetName.Contains("caster")) return 1;
                 else return 0;
             }
 
             private static int GetPrioretyForNeutralMonsters(string targetName)
             {
-                return 0;
+                if (targetName.Contains("Baron")) return 4;
+                else if (targetName.Contains("Dragon")) return 3;
+                else if (targetName.Contains("Red") || targetName.Contains("Blue")) return 2;
+                else if (targetName.Contains("wolf") || targetName.Contains("Gromp") || targetName.Contains("Krug")) return 1;
+                else return 0;
             }
 
             private static Obj_AI_Base CompereLessHealth(Obj_AI_Base target_1, Obj_AI_Base target_2)

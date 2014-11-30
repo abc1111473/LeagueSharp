@@ -21,7 +21,6 @@ namespace SimpleLib
         {
             public static Menu Config;
             public static Obj_AI_Hero Self = ObjectManager.Player;
-            public static Obj_AI_Base ForcedTarget = null;
             public static IEnumerable<Obj_AI_Hero> AllEnemys = STS.AllEnemys;
             public static IEnumerable<Obj_AI_Hero> AllAllys = STS.AllAllys;
 
@@ -157,11 +156,6 @@ namespace SimpleLib
             public static void SetDrawing(bool OnOff)
             {
                 _drawing = OnOff;
-            }
-
-            public static void ForceTarget(Obj_AI_Base target)
-            {
-                ForcedTarget = target;
             }
 
             public static string GetSystemTime()
@@ -377,29 +371,6 @@ namespace SimpleLib
                 return AttackResets.Contains(name.ToLower());
             }
 
-            private static bool ShouldWait()
-            {
-                return ObjectManager.Get<Obj_AI_Minion>().Any(minion => minion.IsValidTarget() && minion.Team != GameObjectTeam.Neutral && InRange(minion) &&
-                HealthPrediction.LaneClearHealthPrediction(minion, (int)((Self.AttackDelay * 1000) * LaneClearWaitTimeMod), FarmDelay()) <= Self.GetAutoAttackDamage(minion));
-            }
-
-            public static bool IsValidBuilding(Obj_Building building)
-            {
-                if (building.Health > 0f && building.IsEnemy && building.IsTargetable && !building.IsInvulnerable && !building.IsDead && building.IsValid)
-                    return true;
-                return false;
-            }
-
-            public static bool InRangeBuildings(Obj_Building target)
-            {
-                if (target != null)
-                {
-                    var myRange = Self.AttackRange + Self.BoundingRadius + target.BoundingRadius;
-                    return Vector2.DistanceSquared(target.Position.To2D(), Self.Position.To2D()) <= myRange * myRange;
-                }
-                return false;
-            }
-
             public class BeforeAttackEventArgs
             {
                 public Obj_AI_Base Target;
@@ -421,7 +392,8 @@ namespace SimpleLib
 
             private static void OnUpdate(EventArgs args)
             {
-                if (MenuGUI.IsChatOpen || !Config.Item("Enabled").GetValue<bool>()) return;
+                if (MenuGUI.IsChatOpen || !Config.Item("Enabled").GetValue<bool>() || Self.IsChanneling || Self.IsChannelingImportantSpell()) return;
+
                 CheckAutoWindUp();
 
                 Obj_AI_Base target = GetPossibleTarget();
@@ -519,13 +491,6 @@ namespace SimpleLib
 
             public static Obj_AI_Base GetPossibleTarget()
             {
-                if (ForcedTarget != null)
-                {
-                    if (InRange(ForcedTarget))
-                        return ForcedTarget;
-                    ForcedTarget = null;
-                }
-
                 Obj_AI_Base tempTarget = null;
                 _currentAttackMode = Config.Item("AttackMode").GetValue<StringList>().SelectedIndex;
 
@@ -539,14 +504,15 @@ namespace SimpleLib
                         if (tempTarget != null) return tempTarget;
                         else
                         {
-                            foreach (var turret in ObjectManager.Get<Obj_AI_Turret>().Where(turret => turret.IsValidTarget(AutoAttackRange()))) tempTarget = turret;
+                            tempTarget = STS.GetTurret(AutoAttackRange(), 100f);
                             if (tempTarget != null) return tempTarget;
                             else
                             {
-                                foreach (var building in ObjectManager.Get<Obj_Building>().Where(b => IsValidBuilding(b) && InRangeBuildings(b) &&
-                                    (b.Name.StartsWith("Barracks_") || IsValidBuilding(b) && InRangeBuildings(b) && b.Name.StartsWith("HQ_"))))
-                                    Self.IssueOrder(GameObjectOrder.AttackUnit, building);
-                                return null;
+                               if(STS.GetInhibitorsNexus(AutoAttackRange(), 100f) != null)
+                               {
+                                   Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
+                               }
+                               return null;
                             }
                         }
                     case Mode.Harass:
@@ -561,13 +527,14 @@ namespace SimpleLib
                                 if (tempTarget != null) return tempTarget;
                                 else
                                 {
-                                    foreach (var turret in ObjectManager.Get<Obj_AI_Turret>().Where(turret => turret.IsValidTarget(AutoAttackRange()))) tempTarget = turret;
+                                    tempTarget = STS.GetTurret(AutoAttackRange(), 100f);
                                     if (tempTarget != null) return tempTarget;
                                     else
                                     {
-                                        foreach (var building in ObjectManager.Get<Obj_Building>().Where(b => IsValidBuilding(b) && InRangeBuildings(b) &&
-                                            (b.Name.StartsWith("Barracks_") || IsValidBuilding(b) && InRangeBuildings(b) && b.Name.StartsWith("HQ_"))))
-                                            Self.IssueOrder(GameObjectOrder.AttackUnit, building);
+                                        if (STS.GetInhibitorsNexus(AutoAttackRange(), 100f) != null)
+                                        {
+                                            Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
+                                        }
                                         return null;
                                     }
                                 }
@@ -582,13 +549,14 @@ namespace SimpleLib
                         if (tempTarget != null) return tempTarget;
                         else
                         {
-                            foreach (var turret in ObjectManager.Get<Obj_AI_Turret>().Where(turret => turret.IsValidTarget(AutoAttackRange()))) tempTarget = turret;
+                            tempTarget = STS.GetTurret(AutoAttackRange(), 100f);
                             if (tempTarget != null) return tempTarget;
                             else
                             {
-                                foreach (var building in ObjectManager.Get<Obj_Building>().Where(b => IsValidBuilding(b) && InRangeBuildings(b) &&
-                                    (b.Name.StartsWith("Barracks_") || IsValidBuilding(b) && InRangeBuildings(b) && b.Name.StartsWith("HQ_"))))
-                                    Self.IssueOrder(GameObjectOrder.AttackUnit, building);
+                                if (STS.GetInhibitorsNexus(AutoAttackRange(), 100f) != null)
+                                {
+                                    Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
+                                }
                                 return null;
                             }
                         }
@@ -599,13 +567,14 @@ namespace SimpleLib
                         if (tempTarget != null) return tempTarget;
                         else
                         {
-                            foreach (var turret in ObjectManager.Get<Obj_AI_Turret>().Where(turret => turret.IsValidTarget(AutoAttackRange()))) tempTarget = turret;
+                            tempTarget = STS.GetTurret(AutoAttackRange(), 100f);
                             if (tempTarget != null) return tempTarget;
                             else
                             {
-                                foreach (var building in ObjectManager.Get<Obj_Building>().Where(b => IsValidBuilding(b) && InRangeBuildings(b) &&
-                                    (b.Name.StartsWith("Barracks_") || IsValidBuilding(b) && InRangeBuildings(b) && b.Name.StartsWith("HQ_"))))
-                                    Self.IssueOrder(GameObjectOrder.AttackUnit, building);
+                                if (STS.GetInhibitorsNexus(AutoAttackRange(), 100f) != null)
+                                {
+                                    Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
+                                }
                                 return null;
                             }
                         }

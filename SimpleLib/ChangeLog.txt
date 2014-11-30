@@ -1,4 +1,9 @@
+1.0.0.1:
+	
+	Fixed focus mode
+	Mada STS target Turrets Inhibs Nexus
+	Some general bug fixes	
 
 1.0.0.0:
 
-  Initial release
+	Initial release

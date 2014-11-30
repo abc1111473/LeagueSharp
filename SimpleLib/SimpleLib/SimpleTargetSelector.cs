@@ -14,7 +14,7 @@ namespace SimpleLib
 {
     namespace SimpleTargetSelector
     {
-        class STS
+        public class STS
         {
             public static Menu Config;
             public static Obj_AI_Hero Self = ObjectManager.Player;
@@ -51,7 +51,7 @@ namespace SimpleLib
             private static bool _focusTarget = true;
             private static bool _enableAllyMenu = true;
             private static Obj_AI_Hero _focustTarget = null;
-            private static Obj_AI_Hero _focustEnemySmiteTarget = null;
+            private static List<Obj_AI_Hero> _focustEnemySmiteTarget = new List<Obj_AI_Hero>();
             
             public static void SetMode(Mode setMode)
             {
@@ -62,6 +62,11 @@ namespace SimpleLib
             public static void ForceMode(bool force = false)
             {
                 _forceMode = force;
+            }
+
+            public static bool GetForceMode()
+            {
+                return _forceMode;
             }
 
             /// <summary>
@@ -75,7 +80,7 @@ namespace SimpleLib
             /// <summary>
             ///     Returns the enemy target that has Summener Spell Smite.
             /// </summary>
-            public static Obj_AI_Hero EnemyWithSmite()
+            public static List<Obj_AI_Hero> EnemyWithSmite()
             {
                 return _focustEnemySmiteTarget;
             }
@@ -240,8 +245,8 @@ namespace SimpleLib
                 {
                     Config.AddItem(new MenuItem("EMR", "Extend Monitar Range").SetValue(new Slider(_extendMonitarRange, 0, 1000)));
                 }
-                Config.AddItem(new MenuItem("FocusMode", "Focus Selected Target")).SetValue<bool>(true);
-                Config.AddItem(new MenuItem("SmiteMode", "Focus Target With Smite")).SetValue<bool>(false);
+                Config.AddItem(new MenuItem("FocusMode", "Focus Selected Target")).SetValue<bool>(_forceMode);
+                Config.AddItem(new MenuItem("SmiteMode", "Focus Target With Smite")).SetValue<bool>(_smiteTarget);
             }
 
             /// <summary>
@@ -636,14 +641,51 @@ namespace SimpleLib
                 return SmiteEnemys;
             }
 
+            /// <summary>
+            ///     Return enemy turret from current players positon in specified Range and extendMonitarRange.
+            /// </summary>
+            public static Obj_AI_Base GetTurret(float aaRange, float extendMonitarRange = 0)
+            {
+                foreach (var turret in ObjectManager.Get<Obj_AI_Turret>().Where(turret => turret.IsValidTarget(aaRange + extendMonitarRange) && turret.IsEnemy))
+                {
+                    return turret;
+                }
+                return null;
+            }
+
+            /// <summary>
+            ///     Return enemy inhib or nexus from current players positon in specified Range and extendMonitarRange.
+            /// </summary>
+            public static Obj_Building GetInhibitorsNexus(float aaRange, float extendMonitarRange = 0)
+            {
+                foreach (var building in ObjectManager.Get<Obj_Building>().Where(building => (building.Name.Contains("Barracks_") || building.Name.Contains("HQ_")) &&
+                    building.IsEnemy && !building.IsInvulnerable && (Vector2.Distance(building.Position.To2D(),Self.Position.To2D())<= aaRange + extendMonitarRange)))
+                {
+                    return building;
+                }
+                return null;
+            }
+
             private static void GetEnemyWithSmite()
             {                
                 foreach (var enemy in AllEnemys.Where
                     (enemy => enemy.SummonerSpellbook.GetSpell(SpellSlot.Summoner1).Name.Contains("smite") ||
                         enemy.Spellbook.GetSpell(SpellSlot.Summoner2).Name.Contains("smite")))
                 {
-                    _focustEnemySmiteTarget = enemy;
+                    _focustEnemySmiteTarget.Add(enemy);
                 }
+            }
+
+            public static Obj_AI_Hero GetFocustTarger(float aaRange, float extendMonitarRange = 0)
+            {
+                if (Hud.SelectedUnit != null)
+                {
+                    if (((Obj_AI_Base)Hud.SelectedUnit).IsValidTarget(aaRange + extendMonitarRange) && ((Obj_AI_Base)Hud.SelectedUnit).IsEnemy)
+                    {
+                        return _focustTarget = (Obj_AI_Hero)Hud.SelectedUnit;
+                    }
+                }
+                return null;
             }
 
             /// <summary>
@@ -652,15 +694,15 @@ namespace SimpleLib
             /// </summary>
             public static void SearchForEnemyTarget()
             {
-                if (_focustTarget != null && _focustTarget.IsValidTarget(_range + _extendMonitarRange))
+                if (GetFocustTarger(_range, _extendMonitarRange) != null)
                 {
-                    SelectedTarget = _focustTarget;
+                    SelectedTarget = GetFocustTarger(_range, _extendMonitarRange);
                     return;
                 }
 
-                if (_smiteTarget == true && _focustEnemySmiteTarget != null && _focustEnemySmiteTarget.IsValidTarget(_range + _extendMonitarRange))
+                if (_smiteTarget == true && _focustEnemySmiteTarget.Count != 0)
                 {
-                    SelectedTarget = _focustEnemySmiteTarget;
+                    SelectedTarget = _focustEnemySmiteTarget.First<Obj_AI_Hero>();
                     return;
                 }
                 switch (CurrentEnemyMode)
