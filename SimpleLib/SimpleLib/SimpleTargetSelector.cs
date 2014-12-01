@@ -1,5 +1,4 @@
-﻿#region
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +7,6 @@ using LeagueSharp;
 using LeagueSharp.Common;
 using SharpDX;
 using Color = System.Drawing.Color;
-#endregion
 
 namespace SimpleLib
 {
@@ -37,7 +35,8 @@ namespace SimpleLib
             public static string[] ADCarry = { "Ashe", "Caitlyn", "Corki", "Draven", "Ezreal", "Graves", "KogMaw", "MissFortune", "Quinn", "Sivir", "Talon", "Tristana", "Twitch", "Urgot", "Varus", "Vayne", "Zed", "Jinx", "Yasuo", "Lucian", "Kalista" };
             public static string[] Bruiser = { "Darius", "Elise", "Evelynn", "Fiora", "Gangplank", "Gnar", "Jayce", "Pantheon", "Irelia", "JarvanIV", "Jax", "Khazix", "LeeSin", "Nocturne", "Olaf", "Poppy", "Renekton", "Rengar", "Riven", "Shyvana", "Trundle", "Tryndamere", "Udyr", "Vi", "MonkeyKing", "XinZhao", "Aatrox", "Rumble", "Shaco", "MasterYi" };
 
-            public static Obj_AI_Hero SelectedTarget;
+            public static Obj_AI_Hero SelectedEnemyTarget;
+            public static Obj_AI_Hero SelectedAllyTarget;
 
             private static float _range = 600f;
             private static bool _enableSTS = true;
@@ -91,7 +90,7 @@ namespace SimpleLib
             /// </summary>
             public void OverrideTarget(Obj_AI_Hero newTarget)
             {
-                SelectedTarget = newTarget;
+                SelectedEnemyTarget = newTarget;
                 _updateTarget = false;
             }
             /// <summary>
@@ -213,8 +212,7 @@ namespace SimpleLib
             {   
                 Game.OnGameUpdate += Game_OnGameUpdate;
                 Drawing.OnDraw += Drawing_OnDraw;
-                Game.OnWndProc += Game_OnWndProc;              
-
+ 
                 AddToMenu(ConfigMenu);
                 Config.Item("TSMode").ValueChanged += TSMode_ValueChanged;
                 Config.Item("AllyTSMode").ValueChanged += AllyTSMode_ValueChanged;
@@ -222,6 +220,12 @@ namespace SimpleLib
                 Config.Item("SmiteMode").ValueChanged += SmiteMode_ValueChanged;
                 Config.Item("EMR").ValueChanged += EMR_ValueChanged;
                 GetEnemyWithSmite();
+
+                TSMode_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
+                AllyTSMode_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
+                FocusMode_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
+                SmiteMode_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
+                EMR_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
             }            
 
             private static void AddToMenu(Menu ConfigMenu)
@@ -277,7 +281,7 @@ namespace SimpleLib
 
             private static void TSMode_ValueChanged(object sender, OnValueChangeEventArgs e)
             {
-                SelectedTarget = null;
+                SelectedEnemyTarget = null;
                 _currentEnemyMode = GetCurrentEnemyMode();
             }
 
@@ -310,6 +314,23 @@ namespace SimpleLib
             public static int GetPriorety(string ChampName)
             {
                 return Config.Item(ChampName).GetValue<Slider>().Value;
+            }
+
+            public static bool IsInvulnerable(Obj_AI_Base target)
+            {
+                if (target.HasBuff("Undying Rage") && target.Health >= 2f)
+                {
+                    return true;
+                }
+                if (target.HasBuff("JudicatorIntervention"))
+                {
+                    return true;
+                }
+                //if (LeagueSharp.Common.Collision.GetCollision(new List<Vector3> { Self.Position, target.Position }, new PredictionInput { Radius = Self.AttackRange, Speed = Self.IsMelee() ? float.MaxValue : Self.BasicAttack.MissileSpeed}).Count == 0)
+                //{
+                //    return true;
+                //}
+                return false;
             }
 
             /// <summary>
@@ -429,7 +450,11 @@ namespace SimpleLib
                 foreach (var target in AllEnemys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
                 {
                     if (newTarget == null) newTarget = target;
-                    else newTarget = CompereHealth(target, newTarget);
+                    else
+                    {
+                        if(IsInvulnerable(CompereHealth(target, newTarget))) continue;
+                        else newTarget = CompereHealth(target, newTarget);
+                    }
                 }
                 return newTarget;
             }
@@ -444,7 +469,11 @@ namespace SimpleLib
                 foreach (var target in AllEnemys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
                 {
                     if (newTarget == null) newTarget = target;
-                    else newTarget = ComperePriorety(target, newTarget);
+                    else
+                    {
+                        if (IsInvulnerable(ComperePriorety(target, newTarget))) continue;
+                        else newTarget = ComperePriorety(target, newTarget);
+                    }
                 }
                 return newTarget;
             }
@@ -459,7 +488,11 @@ namespace SimpleLib
                 foreach (var target in AllEnemys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
                 {
                     if (newTarget == null) newTarget = target;
-                    else newTarget = CompereAP(target, newTarget);
+                    else
+                    {
+                        if (IsInvulnerable(CompereAP(target, newTarget))) continue;
+                        else newTarget = CompereAP(target, newTarget);
+                    }
                 }
                 return newTarget;
             }
@@ -474,7 +507,11 @@ namespace SimpleLib
                 foreach (var target in AllEnemys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
                 {
                     if (newTarget == null) newTarget = target;
-                    else newTarget = CompereAD(target, newTarget);
+                    else
+                    {
+                        if (IsInvulnerable(CompereAD(target, newTarget))) continue;
+                        else newTarget = CompereAD(target, newTarget);
+                    }
                 }
                 return newTarget;
             }
@@ -488,7 +525,11 @@ namespace SimpleLib
                 foreach (var target in AllEnemys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
                 {
                     if (newTarget == null) newTarget = target;
-                    else newTarget = CompereClosest(target, newTarget);
+                    else
+                    {
+                        if (IsInvulnerable(CompereClosest(target, newTarget))) continue;
+                        else newTarget = CompereClosest(target, newTarget);
+                    }
                 }
                 return newTarget;
             }
@@ -680,7 +721,9 @@ namespace SimpleLib
             {
                 if (Hud.SelectedUnit != null)
                 {
-                    if (((Obj_AI_Base)Hud.SelectedUnit).IsValidTarget(aaRange + extendMonitarRange) && ((Obj_AI_Base)Hud.SelectedUnit).IsEnemy)
+                    if (Hud.SelectedUnit.Type == GameObjectType.obj_AI_Hero 
+                        && ((Obj_AI_Base)Hud.SelectedUnit).IsEnemy
+                            && ((Obj_AI_Base)Hud.SelectedUnit).IsValidTarget(aaRange + extendMonitarRange))
                     {
                         return _focustTarget = (Obj_AI_Hero)Hud.SelectedUnit;
                     }
@@ -689,41 +732,47 @@ namespace SimpleLib
             }
 
             /// <summary>
-            ///     Searches for the enemy target with CurrentEnemyMode, range and extend monitar range. 
-            ///     Then sets it as SelectedTarget.
+            ///     Searches for the target with current enemy settings and sets it as SelectedEnemyTarget.
             /// </summary>
             public static void SearchForEnemyTarget()
             {
                 if (GetFocustTarger(_range, _extendMonitarRange) != null)
                 {
-                    SelectedTarget = GetFocustTarger(_range, _extendMonitarRange);
+                    SelectedEnemyTarget = GetFocustTarger(_range, _extendMonitarRange);
                     return;
                 }
 
                 if (_smiteTarget == true && _focustEnemySmiteTarget.Count != 0)
                 {
-                    SelectedTarget = _focustEnemySmiteTarget.First<Obj_AI_Hero>();
+                    SelectedEnemyTarget = _focustEnemySmiteTarget.First<Obj_AI_Hero>();
                     return;
                 }
+                Obj_AI_Hero tempTarget = null;
                 switch (CurrentEnemyMode)
                 {
                     case Mode.LowHP:
-                        SelectedTarget = GetLowHPEnemy(_range, _extendMonitarRange);
+                        tempTarget = GetLowHPEnemy(_range, _extendMonitarRange);
+                        if (!IsInvulnerable(tempTarget)) SelectedEnemyTarget = tempTarget;
                         return;
                     case Mode.Priority:
-                        SelectedTarget = GetPrioretyEnemy(_range, _extendMonitarRange);
+                        tempTarget = GetPrioretyEnemy(_range, _extendMonitarRange);
+                        if (!IsInvulnerable(tempTarget)) SelectedEnemyTarget = tempTarget;
                         return;
                     case Mode.MostAP:
-                        SelectedTarget = GetMostAPEnemy(_range, _extendMonitarRange);
+                        tempTarget = GetMostAPEnemy(_range, _extendMonitarRange);
+                        if (!IsInvulnerable(tempTarget)) SelectedEnemyTarget = tempTarget;
                         return;
                     case Mode.MostAD:
-                        SelectedTarget = GetMostADEnemy(_range, _extendMonitarRange);
+                        tempTarget = GetMostADEnemy(_range, _extendMonitarRange);
+                        if (!IsInvulnerable(tempTarget)) SelectedEnemyTarget = tempTarget;
                         return;
                     case Mode.Closest:
-                        SelectedTarget = GetClosestEnemy(_range, _extendMonitarRange);
+                        tempTarget = GetClosestEnemy(_range, _extendMonitarRange);
+                        if (!IsInvulnerable(tempTarget)) SelectedEnemyTarget = tempTarget;
                         return;
                     case Mode.NearMouse:
-                        SelectedTarget = GetNearMouseEnemy(_range, _extendMonitarRange);
+                        tempTarget = GetNearMouseEnemy(_range, _extendMonitarRange);
+                        if (!IsInvulnerable(tempTarget)) SelectedEnemyTarget = tempTarget;
                         return;
                     default:
                         return;
@@ -732,124 +781,106 @@ namespace SimpleLib
 
             /// <summary>
             ///     Searches for the enemy target with setMode, range and extend monitar range. 
-            ///     Then sets it as SelectedTarget.
+            ///     Then returns it.
             /// </summary>
-            public static void SearchForEnemyTarget(Mode setMode)
+            public static Obj_AI_Hero SearchForEnemyTarget(Mode setMode)
             {
                 switch (setMode)
                 {
                     case Mode.LowHP:
-                        SelectedTarget = GetLowHPEnemy(_range, _extendMonitarRange);
-                        return;
+                        return GetLowHPEnemy(_range, _extendMonitarRange);
                     case Mode.Priority:
-                        SelectedTarget = GetPrioretyEnemy(_range, _extendMonitarRange);
-                        return;
+                        return GetPrioretyEnemy(_range, _extendMonitarRange);
                     case Mode.MostAP:
-                        SelectedTarget = GetMostAPEnemy(_range, _extendMonitarRange);
-                        return;
+                        return GetMostAPEnemy(_range, _extendMonitarRange);
                     case Mode.MostAD:
-                        SelectedTarget = GetMostADEnemy(_range, _extendMonitarRange);
-                        return;
+                        return GetMostADEnemy(_range, _extendMonitarRange);
                     case Mode.Closest:
-                        SelectedTarget = GetClosestEnemy(_range, _extendMonitarRange);
-                        return;
+                        return GetClosestEnemy(_range, _extendMonitarRange);
                     case Mode.NearMouse:
-                        SelectedTarget = GetNearMouseEnemy(_range, _extendMonitarRange);
-                        return;
+                        return GetNearMouseEnemy(_range, _extendMonitarRange);
                     default:
-                        return;
+                        return null;
                 }
             }
 
             /// <summary>
             ///     Searches for the enemy target with setMode, setRange and extend monitar range. 
-            ///     Then sets it as SelectedTarget.
+            ///     Then returns it.
             /// </summary>
-            public static void SearchForEnemyTarget(Mode setMode, float setRange)
+            public static Obj_AI_Hero SearchForEnemyTarget(Mode setMode, float setRange)
             {
                 switch (setMode)
                 {
                     case Mode.LowHP:
-                        SelectedTarget = GetLowHPEnemy(setRange, _extendMonitarRange);
-                        return;
+                        return GetLowHPEnemy(setRange, _extendMonitarRange);
                     case Mode.Priority:
-                        SelectedTarget = GetPrioretyEnemy(setRange, _extendMonitarRange);
-                        return;
+                        return GetPrioretyEnemy(setRange, _extendMonitarRange);
                     case Mode.MostAP:
-                        SelectedTarget = GetMostAPEnemy(setRange, _extendMonitarRange);
-                        return;
+                        return GetMostAPEnemy(setRange, _extendMonitarRange);
                     case Mode.MostAD:
-                        SelectedTarget = GetMostADEnemy(setRange, _extendMonitarRange);
-                        return;
+                        return GetMostADEnemy(setRange, _extendMonitarRange);
                     case Mode.Closest:
-                        SelectedTarget = GetClosestEnemy(_range, _extendMonitarRange);
-                        return;
+                        return GetClosestEnemy(_range, _extendMonitarRange);
                     case Mode.NearMouse:
-                        SelectedTarget = GetNearMouseEnemy(setRange, _extendMonitarRange);
-                        return;
+                        return GetNearMouseEnemy(setRange, _extendMonitarRange);
                     default:
-                        return;
+                        return null;
                 }
             }
 
             /// <summary>
             ///     Searches for the enemy target with setMode, setRange and setExtendMonitarRange. 
-            ///     Then sets it as SelectedTarget.
+            ///     Then returns it.
             /// </summary>
-            public static void SearchForEnemyTarget(Mode setMode, float setRange, float setExtendMonitarRange)
+            public static Obj_AI_Hero SearchForEnemyTarget(Mode setMode, float setRange, float setExtendMonitarRange)
             {
                 switch (setMode)
                 {
                     case Mode.LowHP:
-                        SelectedTarget = GetLowHPEnemy(setRange, setExtendMonitarRange);
-                        return;
+                        return GetLowHPEnemy(setRange, setExtendMonitarRange);
                     case Mode.Priority:
-                        SelectedTarget = GetPrioretyEnemy(setRange, setExtendMonitarRange);
-                        return;
+                        return GetPrioretyEnemy(setRange, setExtendMonitarRange);
                     case Mode.MostAP:
-                        SelectedTarget = GetMostAPEnemy(setRange, setExtendMonitarRange);
-                        return;
+                        return GetMostAPEnemy(setRange, setExtendMonitarRange);
                     case Mode.MostAD:
-                        SelectedTarget = GetMostADEnemy(setRange, setExtendMonitarRange);
-                        return;
+                        return GetMostADEnemy(setRange, setExtendMonitarRange);
                     case Mode.Closest:
-                        SelectedTarget = GetClosestEnemy(_range, _extendMonitarRange);
-                        return;
+                        return GetClosestEnemy(_range, _extendMonitarRange);
                     case Mode.NearMouse:
-                        SelectedTarget = GetNearMouseEnemy(setRange, setExtendMonitarRange);
-                        return;
+                        return GetNearMouseEnemy(setRange, setExtendMonitarRange);
                     default:
-                        return;
+                        return null;
                 }
             }
 
             /// <summary>
-            ///     Searches for the target with current ally settings and returns it. 
+            ///     Searches for the target with current ally settings and sets it as SelectedAllyTarget. 
             /// </summary>
-            public static Obj_AI_Hero SearchForAllyTarget()
+            public static void SearchForAllyTarget()
             {
                 switch (CurrentAllyMode)
                 {
                     case Mode.LowHP:
-                        return GetLowHPEnemy(_range, _extendMonitarRange);
-
+                        SelectedAllyTarget = GetLowHPEnemy(_range, _extendMonitarRange);
+                        return;
                     case Mode.Priority:
-                        return GetPrioretyAlly(_range, _extendMonitarRange);
-
+                        GetPrioretyAlly(_range, _extendMonitarRange);
+                        return;
                     case Mode.MostAP:
-                        return GetMostAPAlly(_range, _extendMonitarRange);
-
+                        SelectedAllyTarget = GetMostAPAlly(_range, _extendMonitarRange);
+                        return;
                     case Mode.MostAD:
-                        return GetMostADAlly(_range, _extendMonitarRange);
-
+                        SelectedAllyTarget = GetMostADAlly(_range, _extendMonitarRange);
+                        return;
                     case Mode.Closest:
-                        return GetClosestAlly(_range, _extendMonitarRange);
-
+                        SelectedAllyTarget = GetClosestAlly(_range, _extendMonitarRange);
+                        return;
                     case Mode.NearMouse:
-                        return GetNearMouseAlly(_range, _extendMonitarRange);
-
+                        SelectedAllyTarget = GetNearMouseAlly(_range, _extendMonitarRange);
+                        return;
                     default:
-                        return null;
+                        return;
                 }
             }
 
@@ -943,21 +974,11 @@ namespace SimpleLib
                 }
             }
 
-            static void Game_OnWndProc(WndEventArgs args)
-            {
-                if (args.Msg != (uint)WindowsMessages.WM_LBUTTONDOWN) return;
-
-                foreach (var enemy in AllEnemys.Where(enemy => enemy.IsValidTarget()))
-                {
-                    _focustTarget = enemy;
-                }
-            }
-
             static void Drawing_OnDraw(EventArgs args)
             {
-                if (!Self.IsDead && SelectedTarget != null && SelectedTarget.IsVisible && !SelectedTarget.IsDead)
+                if (!Self.IsDead && SelectedEnemyTarget != null && SelectedEnemyTarget.IsVisible && !SelectedEnemyTarget.IsDead)
                 {
-                    Render.Circle.DrawCircle(SelectedTarget.Position, 150, Color.Red, 5, true);
+                    Render.Circle.DrawCircle(SelectedEnemyTarget.Position, 150, Color.Red, 5, true);
                 }
             }
 
@@ -966,6 +987,7 @@ namespace SimpleLib
                 if (!_enableSTS) return;
                 if (!_updateTarget) return;
                 SearchForEnemyTarget();
+                SearchForAllyTarget();
             }  
         }
     }

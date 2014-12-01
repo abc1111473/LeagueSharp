@@ -1,5 +1,4 @@
-﻿#region
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +7,6 @@ using LeagueSharp;
 using LeagueSharp.Common;
 using SharpDX;
 using Color = System.Drawing.Color;
-#endregion
 
 namespace SimpleLib
 {
@@ -65,10 +63,6 @@ namespace SimpleLib
             {
                 Config = ConfigMenu;
 
-                var menuSTS = new Menu("Simple Target Selector", "STS");
-                STS.InitializeSTS(menuSTS);
-                Config.AddSubMenu(menuSTS);
-
                 var menuDrawing = new Menu("Drawing", "Drawing");
                 menuDrawing.AddItem(new MenuItem("Drawing", "Drawing").SetValue<bool>(_drawing));
                 menuDrawing.AddItem(new MenuItem("DrawAARange", "AA Circle").SetValue(new Circle(true, Color.FloralWhite)));
@@ -95,17 +89,13 @@ namespace SimpleLib
                 GameObject.OnCreate += Obj_SpellMissile_OnCreate;
                 Game.OnGameProcessPacket += OnProcessPacket;
 
+                SMM.InitializeSMM();
                 CheckAutoWindUp();
             }
 
-            public static void InitializeOrbwalker(Menu ConfigMenu, bool Custom = false)
+            public static void InitializeOrbwalker(Menu ConfigMenu)
             {
-                if (!Custom) AddToMenu(ConfigMenu);
-                else
-                {
-                    CheckAutoWindUp();
-                    ConfigMenu.AddItem(new MenuItem("Credits", "Powered by SimpleOrbWalker"));
-                }
+                AddToMenu(ConfigMenu);
             }
 
             public static void EnableOrbWalker()
@@ -170,12 +160,12 @@ namespace SimpleLib
 
             public static float AutoAttackRange()
             {
-                return Self.AttackRange + Self.BoundingRadius;
+                return Self.AttackRange;
             }
 
             public static float AutoAttackRange(Obj_AI_Base target)
             {
-                return target.AttackRange + target.BoundingRadius;
+                return Self.AttackRange + target.BoundingRadius;
             }
 
             public static bool InRange(Obj_AI_Base target)
@@ -203,7 +193,7 @@ namespace SimpleLib
 
             public static float AutoAttackMissileSpeed()
             {
-                return Self.BasicAttack.MissileSpeed;
+                return Self.IsMelee() ? float.MaxValue : Self.BasicAttack.MissileSpeed;
             }
 
             public static float AutoAttackCastTime()
@@ -497,9 +487,10 @@ namespace SimpleLib
                 switch (CurrentMode)
                 {
                     case Mode.Combo:
+
                         if (_currentAttackMode == 1)
                         {
-                            tempTarget = STS.SelectedTarget;
+                            tempTarget = STS.SelectedEnemyTarget;
                         }
                         if (tempTarget != null) return tempTarget;
                         else
@@ -515,36 +506,46 @@ namespace SimpleLib
                                return null;
                             }
                         }
+
                     case Mode.Harass:
-                            tempTarget = SMM.Target(AutoAttackRange(), SMM.MinionMode.LaneFreez, 100f);
+
+                        SMM.Target(AutoAttackRange(), SMM.MinionMode.LaneFreez, 100f);
+                        tempTarget = SMM.SelectedMinion;
+
+                        if (tempTarget != null) return tempTarget;
+                        else
+                        {
+                            if (_currentAttackMode == 1)
+                            {
+                                tempTarget = STS.SelectedEnemyTarget;
+                            }
                             if (tempTarget != null) return tempTarget;
                             else
                             {
-                                if (_currentAttackMode == 1)
-                                {
-                                    tempTarget = STS.SelectedTarget;
-                                }
+                                tempTarget = STS.GetTurret(AutoAttackRange(), 100f);
                                 if (tempTarget != null) return tempTarget;
                                 else
                                 {
-                                    tempTarget = STS.GetTurret(AutoAttackRange(), 100f);
-                                    if (tempTarget != null) return tempTarget;
-                                    else
+                                    if (STS.GetInhibitorsNexus(AutoAttackRange(), 100f) != null)
                                     {
-                                        if (STS.GetInhibitorsNexus(AutoAttackRange(), 100f) != null)
-                                        {
-                                            Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
-                                        }
-                                        return null;
+                                        Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
                                     }
+                                    return null;
                                 }
                             }
+                        }
 
                     case Mode.LaneClear:
-                        tempTarget = SMM.Target(AutoAttackRange(), SMM.MinionMode.LaneClear, 100f);
+
+                        SMM.Target(AutoAttackRange(), SMM.MinionMode.LaneClear, 100f);
+                        tempTarget = SMM.SelectedMinion;
 
                         if (tempTarget != null) return tempTarget;
-                        else tempTarget = SMM.Target(AutoAttackRange(), SMM.MinionMode.LaneClear, 100f, SMM.MinionTeam.Neutral);
+                        else
+                        {
+                            SMM.Target(AutoAttackRange(), SMM.MinionMode.LaneClear, 100f, SMM.MinionTeam.Neutral);
+                            tempTarget = SMM.SelectedMinion;
+                        }
 
                         if (tempTarget != null) return tempTarget;
                         else
@@ -562,7 +563,9 @@ namespace SimpleLib
                         }
                         
                     case Mode.Lasthit:
-                        tempTarget = SMM.Target(AutoAttackRange(), SMM.MinionMode.LastHit, 100f);
+
+                        SMM.Target(AutoAttackRange(), SMM.MinionMode.LastHit, 100f);
+                        tempTarget = SMM.SelectedMinion;
 
                         if (tempTarget != null) return tempTarget;
                         else
@@ -586,7 +589,7 @@ namespace SimpleLib
 
             public static void MoveTo(Vector3 position)
             {
-                if (Environment.TickCount - _lastMovement <= 200)
+                if (Environment.TickCount - _lastMovement <= 150)
                     return;
 
                 _lastMovement = Environment.TickCount;
@@ -610,7 +613,7 @@ namespace SimpleLib
 
                 float point = (AutoAttackRange() / 100) * 80;
 
-                if (Self.ServerPosition.Distance(target.ServerPosition) < point) MoveTo(Game.CursorPos);
+                if (Self.ServerPosition.Distance(target.ServerPosition) <= point) MoveTo(Game.CursorPos);
                 else Self.IssueOrder(GameObjectOrder.MoveTo, target.ServerPosition);
             }
 
@@ -620,7 +623,7 @@ namespace SimpleLib
                 {                    
                     if (!_disableNextAttack)
                     {
-                        if (CurrentMode != Mode.None && target.IsValidTarget(AutoAttackRange()))
+                        if (CurrentMode != Mode.None && target.IsValidTarget(AutoAttackRange(target)))
                         {
                             FireBeforeAttack(target);
                             Self.IssueOrder(GameObjectOrder.AttackUnit, target);

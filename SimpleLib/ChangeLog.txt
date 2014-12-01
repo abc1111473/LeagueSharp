@@ -1,3 +1,11 @@
+1.0.1.0:
+
+	Under tower farming
+	Cheak for invariable target
+	Some fixes
+	Add lasthiting with spells in SMM.LastHitWithSpell(Spell spell, int minimumNumOfMinionsHit = 1) auto casts if can lasthit
+
+
 1.0.0.1:
 	
 	Fixed focus mode
