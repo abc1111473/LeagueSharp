@@ -20,10 +20,16 @@ namespace SimpleOrbWalker_Standalone
         }
         public static void Game_OnGameLoad(EventArgs args)
         {
-            var menu = new Menu("SimpleOrbWalker", "SimpleOrbWalker", true);
+            var menu = new Menu("SimpleLib", "SimpleLib", true);
+
+            var menuSTS = new Menu("Simple Target Selector", "STS");
+            STS.InitializeSTS(menuSTS);
+            menu.AddSubMenu(menuSTS);
+
             var orbwalkerMenu = new Menu("SimpleOrbWalker", "SimpleOrbWalker");
             SOW.InitializeOrbwalker(orbwalkerMenu);
             menu.AddSubMenu(orbwalkerMenu);
+
             menu.AddToMainMenu();
         }
     }
