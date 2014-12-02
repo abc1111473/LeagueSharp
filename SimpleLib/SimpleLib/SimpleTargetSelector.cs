@@ -38,7 +38,7 @@ namespace SimpleLib
             public static Obj_AI_Hero SelectedEnemyTarget;
             public static Obj_AI_Hero SelectedAllyTarget;
 
-            private static float _range = 600f;
+            private static float _range = Self.AttackRange;
             private static bool _enableSTS = true;
             private static bool _updateTarget = true;
             private static Mode _currentEnemyMode;
@@ -226,7 +226,7 @@ namespace SimpleLib
                 FocusMode_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
                 SmiteMode_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
                 EMR_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
-            }            
+            }
 
             private static void AddToMenu(Menu ConfigMenu)
             {
@@ -747,32 +747,26 @@ namespace SimpleLib
                     SelectedEnemyTarget = _focustEnemySmiteTarget.First<Obj_AI_Hero>();
                     return;
                 }
-                Obj_AI_Hero tempTarget = null;
+
                 switch (CurrentEnemyMode)
                 {
                     case Mode.LowHP:
-                        tempTarget = GetLowHPEnemy(_range, _extendMonitarRange);
-                        if (!IsInvulnerable(tempTarget)) SelectedEnemyTarget = tempTarget;
+                        SelectedEnemyTarget = GetLowHPEnemy(_range, _extendMonitarRange);
                         return;
                     case Mode.Priority:
-                        tempTarget = GetPrioretyEnemy(_range, _extendMonitarRange);
-                        if (!IsInvulnerable(tempTarget)) SelectedEnemyTarget = tempTarget;
+                        SelectedEnemyTarget = GetPrioretyEnemy(_range, _extendMonitarRange);
                         return;
                     case Mode.MostAP:
-                        tempTarget = GetMostAPEnemy(_range, _extendMonitarRange);
-                        if (!IsInvulnerable(tempTarget)) SelectedEnemyTarget = tempTarget;
+                        SelectedEnemyTarget = GetMostAPEnemy(_range, _extendMonitarRange);
                         return;
                     case Mode.MostAD:
-                        tempTarget = GetMostADEnemy(_range, _extendMonitarRange);
-                        if (!IsInvulnerable(tempTarget)) SelectedEnemyTarget = tempTarget;
+                        SelectedEnemyTarget = GetMostADEnemy(_range, _extendMonitarRange);
                         return;
                     case Mode.Closest:
-                        tempTarget = GetClosestEnemy(_range, _extendMonitarRange);
-                        if (!IsInvulnerable(tempTarget)) SelectedEnemyTarget = tempTarget;
+                        SelectedEnemyTarget = GetClosestEnemy(_range, _extendMonitarRange);
                         return;
                     case Mode.NearMouse:
-                        tempTarget = GetNearMouseEnemy(_range, _extendMonitarRange);
-                        if (!IsInvulnerable(tempTarget)) SelectedEnemyTarget = tempTarget;
+                        SelectedEnemyTarget = GetNearMouseEnemy(_range, _extendMonitarRange);
                         return;
                     default:
                         return;
