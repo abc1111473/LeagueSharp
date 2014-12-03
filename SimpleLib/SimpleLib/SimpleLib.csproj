@@ -71,9 +71,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SimpleAssemblyManager.cs" />
+    <Compile Include="SimpleCollision.cs" />
     <Compile Include="SimpleMinionManager.cs" />
     <Compile Include="SimpleOrbWalker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SimplePrediction.cs" />
     <Compile Include="SimpleTargetSelector.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
