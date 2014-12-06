@@ -6,9 +6,6 @@ using System.Threading.Tasks;
 using LeagueSharp;
 using LeagueSharp.Common;
 using SimpleLib;
-using SimpleLib.SimpleOrbWalker;
-using SimpleLib.SimpleTargetSelector;
-using SimpleLib.SimpleMinionManager;
 
 namespace SimpleOrbWalker_Standalone
 {
