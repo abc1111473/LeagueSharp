@@ -51,6 +51,9 @@ namespace SimpleLib
         public static Obj_AI_Base SelectedMinion = null;
         private static Obj_AI_Base _focustMinion = null;
 
+        public delegate void UnderTowerFarmH(Obj_AI_Base minion);
+        public static event UnderTowerFarmH UnderTowerFarm;
+
         /// <summary>
         ///     Returns the List<Obj_AI_Base> of all minions in Range and ExtendMonitarRange
         /// </summary>
@@ -681,26 +684,9 @@ namespace SimpleLib
                     _focustMinion = (Obj_AI_Base)args.Target;
                     return;
                 }
-                else if (turretDmg <= healthPred)
-                {
-                    if (healthPred >= (2 * selfAADmg + turretDmg))
-                    {
-                        _focustMinion = (Obj_AI_Base)args.Target;
-                        return;
-                    }
-                    else if (healthPred >= (selfAADmg + turretDmg + 5f))
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        _focustMinion = null;
-                        return;
-                    }
-                }
                 else
                 {
-                    _focustMinion = null;
+                    UnderTowerFarm((Obj_AI_Base)args.Target);
                     return;
                 }
             }

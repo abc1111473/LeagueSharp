@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{F4ACB590-2FB2-4F05-A5B9-BB988700F7FF}</ProjectGuid>
     <OutputType>Exe</OutputType>
@@ -11,56 +11,59 @@
     <AssemblyName>YouAssembly</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <PreBuildEvent />
+    <PostBuildEvent />
+    <OutputPath>bin\Release</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>bin\Release</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>bin\Release</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="clipper_library">
-      <HintPath>C:\BoL Studio\LeagueSharp\System\clipper_library.dll</HintPath>
+      <HintPath>C:\BoL Studio\LeagueSharp\\System\clipper_library.dll</HintPath>
     </Reference>
     <Reference Include="DevCommom">
-      <HintPath>C:\BoL Studio\LeagueSharp\System\DevCommom.dll</HintPath>
+      <HintPath>C:\BoL Studio\LeagueSharp\\System\DevCommom.dll</HintPath>
     </Reference>
     <Reference Include="LeagueSharp">
-      <HintPath>C:\BoL Studio\LeagueSharp\System\LeagueSharp.dll</HintPath>
+      <HintPath>C:\BoL Studio\LeagueSharp\\System\LeagueSharp.dll</HintPath>
     </Reference>
     <Reference Include="LeagueSharp.AppDomainManager">
-      <HintPath>C:\BoL Studio\LeagueSharp\System\LeagueSharp.AppDomainManager.dll</HintPath>
+      <HintPath>C:\BoL Studio\LeagueSharp\\System\LeagueSharp.AppDomainManager.dll</HintPath>
     </Reference>
     <Reference Include="LeagueSharp.Common">
-      <HintPath>C:\BoL Studio\LeagueSharp\System\LeagueSharp.Common.dll</HintPath>
+      <HintPath>C:\BoL Studio\LeagueSharp\\System\LeagueSharp.Common.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX">
-      <HintPath>C:\BoL Studio\LeagueSharp\System\SharpDX.dll</HintPath>
+      <HintPath>C:\BoL Studio\LeagueSharp\\System\SharpDX.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX.Direct3D9">
-      <HintPath>C:\BoL Studio\LeagueSharp\System\SharpDX.Direct3D9.dll</HintPath>
+      <HintPath>C:\BoL Studio\LeagueSharp\\System\SharpDX.Direct3D9.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX.Toolkit">
-      <HintPath>C:\BoL Studio\LeagueSharp\System\SharpDX.Toolkit.dll</HintPath>
+      <HintPath>C:\BoL Studio\LeagueSharp\\System\SharpDX.Toolkit.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX.Toolkit.Graphics">
-      <HintPath>C:\BoL Studio\LeagueSharp\System\SharpDX.Toolkit.Graphics.dll</HintPath>
+      <HintPath>C:\BoL Studio\LeagueSharp\\System\SharpDX.Toolkit.Graphics.dll</HintPath>
     </Reference>
     <Reference Include="SimpleLib">
-      <HintPath>C:\BoL Studio\LeagueSharp\System\SimpleLib.dll</HintPath>
+      <HintPath>C:\BoL Studio\LeagueSharp\\System\SimpleLib.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

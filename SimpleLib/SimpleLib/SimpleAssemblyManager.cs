@@ -55,7 +55,7 @@ namespace SimpleLib
             private static Menu LMenu;
             private static int SelectedPriority;
 
-            public static void AddToMenu(Menu menu)
+            public void AddToMenu(Menu menu)
             {
                 LMenu = menu;
                 if (SpellPriorityList.Count > 0)
@@ -65,11 +65,11 @@ namespace SimpleLib
                     SelectedPriority = LMenu.Item(ObjectManager.Player.ChampionName).GetValue<StringList>().SelectedIndex;
                 }
             }
-            public static void Add(string spellPriorityDesc, int[] spellPriority)
+            public void Add(string spellPriorityDesc, int[] spellPriority)
             {
                 SpellPriorityList.Add(spellPriorityDesc, spellPriority);
             }
-            public static void Update()
+            public void Update()
             {
                 if (SpellPriorityList.Count == 0 || !LMenu.Item(ObjectManager.Player.ChampionName).GetValue<bool>() ||
                     lastLevel == ObjectManager.Player.Level)
@@ -106,7 +106,7 @@ namespace SimpleLib
             private static int SelectedSkin;
             private static bool Initialize = true;
 
-            public static void AddToMenu(Menu menu)
+            public void AddToMenu(Menu menu)
             {
                 SMenu = menu;
                 if (Skins.Count > 0)
@@ -117,12 +117,12 @@ namespace SimpleLib
                 }
             }
 
-            public static void AddSkin(string skin)
+            public void AddSkin(string skin)
             {
                 Skins.Add(skin);
             }
 
-            public static void Update()
+            public void Update()
             {
                 if (SMenu.Item(ObjectManager.Player.ChampionName).GetValue<bool>())
                 {
@@ -136,7 +136,7 @@ namespace SimpleLib
                 }
             }
 
-            private static void GenerateSkinPacket(int skinNumber)
+            private void GenerateSkinPacket(int skinNumber)
             {
                 int netID = ObjectManager.Player.NetworkId;
                 GamePacket model = Packet.S2C.UpdateModel.Encoded(new Packet.S2C.UpdateModel.Struct(ObjectManager.Player.NetworkId, skinNumber, ObjectManager.Player.ChampionName));

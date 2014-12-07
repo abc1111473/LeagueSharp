@@ -79,6 +79,7 @@ namespace SimpleLib
                 menu.AddItem(new MenuItem("Lasthit", "Lasthit").SetValue(new KeyBind("X".ToCharArray()[0], KeyBindType.Press)));
                 menu.AddItem(new MenuItem("Combo", "Carry me!").SetValue(new KeyBind(" ".ToCharArray()[0], KeyBindType.Press)));
 
+                SMM.InitializeSMM();
                 Config = menu;
                 return menu;
             }
@@ -180,20 +181,6 @@ namespace SimpleLib
         {
             if (target != null && InRange(target)) return true;
             else return false;
-        }
-
-        public float GetHealthPercent(Obj_AI_Base unit = null)
-        {
-            if (unit == null)
-                unit = SL.Self;
-            return (unit.Health / unit.MaxHealth) * 100f;
-        }
-
-        public float GetManaPercent(Obj_AI_Hero unit = null)
-        {
-            if (unit == null)
-                unit = SL.Self;
-            return (unit.Mana / unit.MaxMana) * 100f;
         }
 
         public static void Attack(Obj_AI_Base target)

@@ -166,15 +166,6 @@ namespace SimpleLib
         }
 
         /// <summary>
-        ///     Returns name of the spell in the set SpellSlot and set unit.
-        ///     If unit is null then returns the name of the spell in Players SpellSlot.
-        /// </summary>
-        public string GetSpellName(SpellSlot slot, Obj_AI_Base unit = null)
-        {
-            return unit != null ? unit.Spellbook.GetSpell(slot).Name : SL.Self.Spellbook.GetSpell(slot).Name;
-        }
-
-        /// <summary>
         ///     Cheacks if ther are min number of enemys champs in set Range from the unit.
         ///     Default unit is player.
         /// </summary>
