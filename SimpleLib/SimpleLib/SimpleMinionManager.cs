@@ -46,8 +46,7 @@ namespace SimpleLib
             NearMouse,
             None,
         }
-
-        private static Obj_AI_Hero Self = ObjectManager.Player;
+        
         private static int _farmDelay;
         public static Obj_AI_Base SelectedMinion = null;
         private static Obj_AI_Base _focustMinion = null;
@@ -287,18 +286,18 @@ namespace SimpleLib
 
         private static Obj_AI_Base CompereClosest(Obj_AI_Base target_1, Obj_AI_Base target_2)
         {
-            if (Geometry.Distance(target_1, Self) > Geometry.Distance(target_2, Self)) return target_2;
+            if (Geometry.Distance(target_1, SL.Self) > Geometry.Distance(target_2, SL.Self)) return target_2;
 
-            if (Geometry.Distance(target_1, Self) == Geometry.Distance(target_2, Self)) return null;
+            if (Geometry.Distance(target_1, SL.Self) == Geometry.Distance(target_2, SL.Self)) return null;
 
             return target_1;
         }
 
         private static Obj_AI_Base CompereFurthest(Obj_AI_Base target_1, Obj_AI_Base target_2)
         {
-            if (Geometry.Distance(target_1, Self) > Geometry.Distance(target_2, Self)) return target_1;
+            if (Geometry.Distance(target_1, SL.Self) > Geometry.Distance(target_2, SL.Self)) return target_1;
 
-            if (Geometry.Distance(target_1, Self) == Geometry.Distance(target_2, Self)) return null;
+            if (Geometry.Distance(target_1, SL.Self) == Geometry.Distance(target_2, SL.Self)) return null;
 
             return target_2;
         }
@@ -358,8 +357,8 @@ namespace SimpleLib
                 case MinionTeam.Enemy:
                     foreach (var minion in AllEnemyMinions(Range + ExtendMonitarRange))
                     {
-                        var predHealth = HealthPrediction.GetHealthPrediction(minion, ((int)(Self.AttackCastDelay * 1000) - 100 + Game.Ping / 2 + 1000 * (int)Self.Distance(minion) / (int)Self.BasicAttack.MissileSpeed), _farmDelay);
-                        if (predHealth > 0 && predHealth <= Self.GetAutoAttackDamage(minion, true))
+                        var predHealth = HealthPrediction.GetHealthPrediction(minion, ((int)(SL.Self.AttackCastDelay * 1000) - 100 + Game.Ping / 2 + 1000 * (int)SL.Self.Distance(minion) / (int)SL.Self.BasicAttack.MissileSpeed), _farmDelay);
+                        if (predHealth > 0 && predHealth <= SL.Self.GetAutoAttackDamage(minion, true))
                         {
                             newTarget.Add(minion);
                         }
@@ -386,8 +385,8 @@ namespace SimpleLib
                 case MinionTeam.Neutral:
                     foreach (var minion in AllNeutralMinions(Range + ExtendMonitarRange))
                     {
-                        var predHealth = HealthPrediction.GetHealthPrediction(minion, ((int)(Self.AttackCastDelay * 1000) - 100 + Game.Ping / 2 + 1000 * (int)Self.Distance(minion) / (int)Self.BasicAttack.MissileSpeed), _farmDelay);
-                        if (predHealth > 0 && predHealth <= Self.GetAutoAttackDamage(minion, true))
+                        var predHealth = HealthPrediction.GetHealthPrediction(minion, ((int)(SL.Self.AttackCastDelay * 1000) - 100 + Game.Ping / 2 + 1000 * (int)SL.Self.Distance(minion) / (int)SL.Self.BasicAttack.MissileSpeed), _farmDelay);
+                        if (predHealth > 0 && predHealth <= SL.Self.GetAutoAttackDamage(minion, true))
                         {
                             newTarget.Add(minion);
                         }
@@ -434,9 +433,9 @@ namespace SimpleLib
                     float predHealth = 0;
                     foreach (var minion in AllEnemyMinions(Range, ExtendMonitarRange))
                     {
-                        predHealth = HealthPrediction.LaneClearHealthPrediction(minion, (int)((Self.AttackDelay * 1000) * 2f), _farmDelay);
+                        predHealth = HealthPrediction.LaneClearHealthPrediction(minion, (int)((SL.Self.AttackDelay * 1000) * 2f), _farmDelay);
 
-                        if (predHealth >= 2 * Self.GetAutoAttackDamage(minion, true))
+                        if (predHealth >= 2 * SL.Self.GetAutoAttackDamage(minion, true))
                         {
                             newTarget.Add(minion);
                         }
@@ -663,7 +662,7 @@ namespace SimpleLib
         {
             foreach (var minion in AllEnemyMinions(Range + ExtendMonitarRange))
             {
-                if (HealthPrediction.LaneClearHealthPrediction(minion, (int)((Self.AttackDelay * 1000) * 2f), _farmDelay) <= Self.GetAutoAttackDamage(minion, true))
+                if (HealthPrediction.LaneClearHealthPrediction(minion, (int)((SL.Self.AttackDelay * 1000) * 2f), _farmDelay) <= SL.Self.GetAutoAttackDamage(minion, true))
                     return true;
             }
             return false;
@@ -671,11 +670,11 @@ namespace SimpleLib
 
         static void Obj_AI_Turret_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
         {
-            if (sender.IsValidTarget(1000, false, Self.Position) && sender.Name.Contains("Turret") && sender.IsAlly)
+            if (sender.IsValidTarget(1000, false, SL.Self.Position) && sender.Name.Contains("Turret") && sender.IsAlly)
             {
-                float healthPred = HealthPrediction.GetHealthPrediction((Obj_AI_Base)args.Target, (int)((Self.AttackDelay * 1000) * 2f));
+                float healthPred = HealthPrediction.GetHealthPrediction((Obj_AI_Base)args.Target, (int)((SL.Self.AttackDelay * 1000) * 2f));
                 double turretDmg = sender.GetAutoAttackDamage((Obj_AI_Base)args.Target);
-                double selfAADmg = Self.GetAutoAttackDamage((Obj_AI_Base)args.Target, true);
+                double selfAADmg = SL.Self.GetAutoAttackDamage((Obj_AI_Base)args.Target, true);
 
                 if (healthPred <= selfAADmg)
                 {
@@ -721,7 +720,7 @@ namespace SimpleLib
                     if (prediction.Hitchance == HitChance.High)
                     {
                         minionToLastHit = minion;
-                        if (minion.Health > Self.GetAutoAttackDamage(minion, true) && spell.IsKillable(minion))
+                        if (minion.Health > SL.Self.GetAutoAttackDamage(minion, true) && spell.IsKillable(minion))
                             break;
                     }
                 }
@@ -747,7 +746,7 @@ namespace SimpleLib
                 foreach (var minion in AllEnemyMinions(spell.Range))
                 {
                     minionToLastHit = minion;
-                    if (minion.Health > Self.GetAutoAttackDamage(minion, true) && spell.IsKillable(minion))
+                    if (minion.Health > SL.Self.GetAutoAttackDamage(minion, true) && spell.IsKillable(minion))
                         break;
                 }
                 if (minionToLastHit != null) spell.Cast(minionToLastHit);

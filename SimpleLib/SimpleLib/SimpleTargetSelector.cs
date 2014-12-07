@@ -10,11 +10,9 @@ using Color = System.Drawing.Color;
 
 namespace SimpleLib
 {
-
     public class STS
     {
         public static Menu Config;
-        public static Obj_AI_Hero Self = ObjectManager.Player;
         public static IEnumerable<Obj_AI_Hero> AllEnemys = ObjectManager.Get<Obj_AI_Hero>().Where(hero => hero.IsEnemy);
         public static IEnumerable<Obj_AI_Hero> AllAllys = ObjectManager.Get<Obj_AI_Hero>().Where(hero => hero.IsAlly);
 
@@ -37,7 +35,7 @@ namespace SimpleLib
         public static Obj_AI_Hero SelectedEnemyTarget;
         public static Obj_AI_Hero SelectedAllyTarget;
 
-        private static float _range = Self.AttackRange;
+        private static float _range = SL.Self.AttackRange;
         private static bool _enableSTS = true;
         private static bool _updateTarget = true;
         private static Mode _currentEnemyMode;
@@ -50,6 +48,7 @@ namespace SimpleLib
         private static bool _enableAllyMenu = true;
         private static Obj_AI_Hero _focustTarget = null;
         private static List<Obj_AI_Hero> _focustEnemySmiteTarget = new List<Obj_AI_Hero>();
+        private static bool EnemyYasuo = AllEnemys.Any(hero => hero.BaseSkinName.Contains("yasuo") && hero.IsEnemy);
 
         public static void SetMode(Mode setMode)
         {
@@ -73,6 +72,11 @@ namespace SimpleLib
         public static void EnableAllyMenu(bool setAllyMenu)
         {
             _enableAllyMenu = setAllyMenu;
+        }
+
+        public static bool IsThereYasuoOnTheEnemyTeam
+        {
+            get { return EnemyYasuo; }
         }
 
         /// <summary>
@@ -161,7 +165,27 @@ namespace SimpleLib
             }
         }
 
-        private static Mode GetCurrentEnemyMode()
+        /// <summary>
+        ///     Returns name of the spell in the set SpellSlot and set unit.
+        ///     If unit is null then returns the name of the spell in Players SpellSlot.
+        /// </summary>
+        public string GetSpellName(SpellSlot slot, Obj_AI_Base unit = null)
+        {
+            return unit != null ? unit.Spellbook.GetSpell(slot).Name : SL.Self.Spellbook.GetSpell(slot).Name;
+        }
+
+        /// <summary>
+        ///     Cheacks if ther are min number of enemys champs in set Range from the unit.
+        ///     Default unit is player.
+        /// </summary>
+        public bool EnemysinRange(float range, int min = 1, Obj_AI_Base unit = null)
+        {
+            if (unit == null)
+                unit = SL.Self;
+            return min <= AllEnemys.Count(hero => hero.Distance(unit) < range && hero.IsValidTarget());
+        }
+
+        public static Mode GetCurrentEnemyMode()
         {
             switch (Config.Item("TSMode").GetValue<StringList>().SelectedIndex)
             {
@@ -207,12 +231,11 @@ namespace SimpleLib
         ///     Initializes the STS with default values. 
         ///     If u want to set custom values for force mode, EMR and AllyMenu they should be set before this.
         /// </summary>
-        public static void InitializeSTS(Menu ConfigMenu)
+        public static void InitializeSTS()
         {
             Game.OnGameUpdate += Game_OnGameUpdate;
             Drawing.OnDraw += Drawing_OnDraw;
 
-            AddToMenu(ConfigMenu);
             Config.Item("TSMode").ValueChanged += TSMode_ValueChanged;
             Config.Item("AllyTSMode").ValueChanged += AllyTSMode_ValueChanged;
             Config.Item("FocusMode").ValueChanged += FocusMode_ValueChanged;
@@ -227,45 +250,54 @@ namespace SimpleLib
             EMR_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
         }
 
-        private static void AddToMenu(Menu ConfigMenu)
+        public static Menu STSMenu
         {
-            Config = ConfigMenu;
-
-            var menuEnemyPriorety = new Menu("Enemy Priorety", "Priorety");
-
-            menuEnemyPriorety.AddItem(new MenuItem("TSMode", "Target Selector Mode:").SetValue(new StringList(new[] { "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse" }).SelectedIndex));
-
-            foreach (var enemy in AllEnemys)
+            get
             {
-                menuEnemyPriorety.AddItem(new MenuItem(enemy.BaseSkinName, enemy.BaseSkinName)).SetValue(new Slider(GetAutoPriorety(enemy.BaseSkinName), 5, 0));
+                var menu = new Menu("Simple Target Selector", "STS");
+
+                var menuEnemyPriorety = new Menu("Enemy Priorety", "Priorety");
+
+                menuEnemyPriorety.AddItem(new MenuItem("TSMode", "Target Selector Mode:").SetValue(new StringList(new[] { "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse" })));
+
+                foreach (var enemy in AllEnemys)
+                {
+                    menuEnemyPriorety.AddItem(new MenuItem(enemy.BaseSkinName, enemy.BaseSkinName)).SetValue(new Slider(GetAutoPriorety(enemy.BaseSkinName), 5, 0));
+                }
+
+                menu.AddSubMenu(menuEnemyPriorety);
+
+                if (_enableAllyMenu) menu.AddSubMenu(AllyMenu);
+
+                if (_enableEMR)
+                {
+                    menu.AddItem(new MenuItem("EMR", "Extend Monitar Range").SetValue(new Slider(_extendMonitarRange, 0, 1000)));
+                }
+                menu.AddItem(new MenuItem("FocusMode", "Focus Selected Target")).SetValue<bool>(_forceMode);
+                menu.AddItem(new MenuItem("SmiteMode", "Focus Target With Smite")).SetValue<bool>(_smiteTarget);
+
+                Config = menu;
+                return menu;
             }
-
-            Config.AddSubMenu(menuEnemyPriorety);
-
-            if (_enableAllyMenu) Config.AddSubMenu(AllyMenu());
-
-            if (_enableEMR)
-            {
-                Config.AddItem(new MenuItem("EMR", "Extend Monitar Range").SetValue(new Slider(_extendMonitarRange, 0, 1000)));
-            }
-            Config.AddItem(new MenuItem("FocusMode", "Focus Selected Target")).SetValue<bool>(_forceMode);
-            Config.AddItem(new MenuItem("SmiteMode", "Focus Target With Smite")).SetValue<bool>(_smiteTarget);
         }
 
         /// <summary>
         ///     Returns STS menu for allys. It can be used outside STS but it has to be disabled in the main STS menu EnableAllyMenu(bool)
         /// </summary>
-        public static Menu AllyMenu()
+        public static Menu AllyMenu
         {
-            var menuAllyPriorety = new Menu("Ally Priorety", "AllySTS");
-
-            menuAllyPriorety.AddItem(new MenuItem("AllyTSMode", "Target Selector Mode:").SetValue(new StringList(new[] { "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse" }).SelectedIndex));
-
-            foreach (var ally in AllAllys)
+            get
             {
-                menuAllyPriorety.AddItem(new MenuItem(ally.BaseSkinName, ally.BaseSkinName)).SetValue(new Slider(GetAutoPriorety(ally.BaseSkinName), 5, 0));
+                var menuAllyPriorety = new Menu("Ally Priorety", "AllySTS");
+
+                menuAllyPriorety.AddItem(new MenuItem("AllyTSMode", "Target Selector Mode:").SetValue(new StringList(new[] { "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse" })));
+
+                foreach (var ally in AllAllys)
+                {
+                    menuAllyPriorety.AddItem(new MenuItem(ally.BaseSkinName, ally.BaseSkinName)).SetValue(new Slider(GetAutoPriorety(ally.BaseSkinName), 5, 0));
+                }
+                return menuAllyPriorety;
             }
-            return menuAllyPriorety;
         }
 
         private static void SmiteMode_ValueChanged(object sender, OnValueChangeEventArgs e)
@@ -325,10 +357,12 @@ namespace SimpleLib
             {
                 return true;
             }
-            //if (LeagueSharp.Common.Collision.GetCollision(new List<Vector3> { Self.Position, target.Position }, new PredictionInput { Radius = Self.AttackRange, Speed = Self.IsMelee() ? float.MaxValue : Self.BasicAttack.MissileSpeed}).Count == 0)
+
+            //if (!AllEnemys.Any(hero => hero.BaseSkinName.Contains("yasuo") && hero.IsEnemy))
             //{
-            //    return true;
+            //    return false;
             //}
+
             return false;
         }
 
@@ -415,9 +449,9 @@ namespace SimpleLib
         /// </summary>
         public static Obj_AI_Hero CompereClosest(Obj_AI_Hero target_1, Obj_AI_Hero target_2)
         {
-            if (Geometry.Distance(target_1, Self) > Geometry.Distance(target_2, Self)) return target_2;
+            if (Geometry.Distance(target_1, SL.Self) > Geometry.Distance(target_2, SL.Self)) return target_2;
 
-            if (Geometry.Distance(target_1, Self) == Geometry.Distance(target_2, Self))
+            if (Geometry.Distance(target_1, SL.Self) == Geometry.Distance(target_2, SL.Self))
             {
                 return CompereHealth(target_1, target_2);
             }
@@ -699,7 +733,7 @@ namespace SimpleLib
         public static Obj_Building GetInhibitorsNexus(float aaRange, float extendMonitarRange = 0)
         {
             foreach (var building in ObjectManager.Get<Obj_Building>().Where(building => (building.Name.Contains("Barracks_") || building.Name.Contains("HQ_")) &&
-                building.IsEnemy && !building.IsInvulnerable && (Vector2.Distance(building.Position.To2D(), Self.Position.To2D()) <= aaRange + extendMonitarRange)))
+                building.IsEnemy && !building.IsInvulnerable && (Vector2.Distance(building.Position.To2D(), SL.Self.Position.To2D()) <= aaRange + extendMonitarRange)))
             {
                 return building;
             }
@@ -747,7 +781,7 @@ namespace SimpleLib
                 return;
             }
 
-            switch (CurrentEnemyMode)
+            switch (GetCurrentEnemyMode())
             {
                 case Mode.LowHP:
                     SelectedEnemyTarget = GetLowHPEnemy(_range, _extendMonitarRange);
@@ -969,7 +1003,7 @@ namespace SimpleLib
 
         static void Drawing_OnDraw(EventArgs args)
         {
-            if (!Self.IsDead && SelectedEnemyTarget != null && SelectedEnemyTarget.IsVisible && !SelectedEnemyTarget.IsDead)
+            if (!SL.Self.IsDead && SelectedEnemyTarget != null && SelectedEnemyTarget.IsVisible && !SelectedEnemyTarget.IsDead)
             {
                 Render.Circle.DrawCircle(SelectedEnemyTarget.Position, 150, Color.Red, 5, true);
             }

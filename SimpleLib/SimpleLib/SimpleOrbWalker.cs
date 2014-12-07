@@ -12,8 +12,7 @@ namespace SimpleLib
 {
     public class SOW
     {
-        public static Menu Config;
-        public static Obj_AI_Hero Self = ObjectManager.Player;
+        private static Menu Config;
         public static IEnumerable<Obj_AI_Hero> AllEnemys = STS.AllEnemys;
         public static IEnumerable<Obj_AI_Hero> AllAllys = STS.AllAllys;
 
@@ -54,43 +53,45 @@ namespace SimpleLib
         public static event AfterAttackEvenH AfterAttack;
         public static event OnAttackEvenH OnAttack;
 
-        private static void AddToMenu(Menu ConfigMenu)
+        public static Menu SOWMenu
         {
-            Config = ConfigMenu;
+            get
+            {
+                var menu = new Menu("Simple OrbWalker", "SOW");
 
-            var menuDrawing = new Menu("Drawing", "Drawing");
-            menuDrawing.AddItem(new MenuItem("Drawing", "Drawing").SetValue<bool>(_drawing));
-            menuDrawing.AddItem(new MenuItem("DrawAARange", "AA Circle").SetValue(new Circle(true, Color.FloralWhite)));
-            menuDrawing.AddItem(new MenuItem("DrawEnemyAARange", "AA Circle Enemy").SetValue(new Circle(true, Color.Pink)));
-            menuDrawing.AddItem(new MenuItem("DrawHoldzone", "HoldZone").SetValue(new Circle(true, Color.FloralWhite)));
-            menuDrawing.AddItem(new MenuItem("DrawLasthit", "Minion LastHit").SetValue(new Circle(true, Color.Lime)));
-            menuDrawing.AddItem(new MenuItem("DrawnearKill", "Minion NearKill").SetValue(new Circle(true, Color.Gold)));
-            Config.AddSubMenu(menuDrawing);
+                var menuDrawing = new Menu("Drawing", "Drawing");
+                menuDrawing.AddItem(new MenuItem("Drawing", "Drawing").SetValue<bool>(_drawing));
+                menuDrawing.AddItem(new MenuItem("DrawAARange", "AA Circle").SetValue(new Circle(true, Color.FloralWhite)));
+                menuDrawing.AddItem(new MenuItem("DrawEnemyAARange", "AA Circle Enemy").SetValue(new Circle(true, Color.Pink)));
+                menuDrawing.AddItem(new MenuItem("DrawHoldzone", "HoldZone").SetValue(new Circle(true, Color.FloralWhite)));
+                menuDrawing.AddItem(new MenuItem("DrawLasthit", "Minion LastHit").SetValue(new Circle(true, Color.Lime)));
+                menuDrawing.AddItem(new MenuItem("DrawnearKill", "Minion NearKill").SetValue(new Circle(true, Color.Gold)));
+                menu.AddSubMenu(menuDrawing);
 
-            Config.AddItem(new MenuItem("Enabled", "Enabled").SetValue<bool>(_enabled));
-            Config.AddItem(new MenuItem("FarmDelay", "Farm Delay").SetValue(new Slider(0, 0, 200)));
-            Config.AddItem(new MenuItem("Holdzone", "Hold Position").SetValue(new Slider(50, 500, 0)));
-            Config.AddItem(new MenuItem("AttackMode", "Attack Mode").SetValue(new StringList(new[] { "Only Farming", "Farming + Carry mode" })));
-            Config.AddItem(new MenuItem("Mode", "Orbwalking Mode").SetValue(new StringList(new[] { "To mouse", "To target" })));
-            Config.AddItem(new MenuItem("Hotkeys", "Hotkeys"));
-            Config.AddItem(new MenuItem("Harass", "Harass").SetValue(new KeyBind("C".ToCharArray()[0], KeyBindType.Press)));
-            Config.AddItem(new MenuItem("LaneClear", "LaneClear").SetValue(new KeyBind("V".ToCharArray()[0], KeyBindType.Press)));
-            Config.AddItem(new MenuItem("Lasthit", "Lasthit").SetValue(new KeyBind("X".ToCharArray()[0], KeyBindType.Press)));
-            Config.AddItem(new MenuItem("Combo", "Carry me!").SetValue(new KeyBind(" ".ToCharArray()[0], KeyBindType.Press)));
+                menu.AddItem(new MenuItem("Enabled", "Enabled").SetValue<bool>(_enabled));
+                menu.AddItem(new MenuItem("FarmDelay", "Farm Delay").SetValue(new Slider(0, 0, 200)));
+                menu.AddItem(new MenuItem("Holdzone", "Hold Position").SetValue(new Slider(50, 500, 0)));
+                menu.AddItem(new MenuItem("AttackMode", "Attack Mode").SetValue(new StringList(new[] { "Only Farming", "Farming + Carry mode" })));
+                menu.AddItem(new MenuItem("Mode", "Orbwalking Mode").SetValue(new StringList(new[] { "To mouse", "To target" })));
+                menu.AddItem(new MenuItem("Hotkeys", "Hotkeys"));
+                menu.AddItem(new MenuItem("Harass", "Harass").SetValue(new KeyBind("C".ToCharArray()[0], KeyBindType.Press)));
+                menu.AddItem(new MenuItem("LaneClear", "LaneClear").SetValue(new KeyBind("V".ToCharArray()[0], KeyBindType.Press)));
+                menu.AddItem(new MenuItem("Lasthit", "Lasthit").SetValue(new KeyBind("X".ToCharArray()[0], KeyBindType.Press)));
+                menu.AddItem(new MenuItem("Combo", "Carry me!").SetValue(new KeyBind(" ".ToCharArray()[0], KeyBindType.Press)));
 
+                Config = menu;
+                return menu;
+            }
+        }
+
+        public static void InitializeOrbwalker()
+        {
             Drawing.OnDraw += OnDraw;
             Game.OnGameUpdate += OnUpdate;
             Obj_AI_Base.OnProcessSpellCast += OnProcessSpell;
             GameObject.OnCreate += Obj_SpellMissile_OnCreate;
             Game.OnGameProcessPacket += OnProcessPacket;
-
-            SMM.InitializeSMM();
             CheckAutoWindUp();
-        }
-
-        public static void InitializeOrbwalker(Menu ConfigMenu)
-        {
-            AddToMenu(ConfigMenu);
         }
 
         public static void EnableOrbWalker()
@@ -155,12 +156,12 @@ namespace SimpleLib
 
         public static float AutoAttackRange()
         {
-            return Self.AttackRange;
+            return SL.Self.AttackRange;
         }
 
         public static float AutoAttackRange(Obj_AI_Base target)
         {
-            return Self.AttackRange + target.BoundingRadius;
+            return SL.Self.AttackRange + target.BoundingRadius;
         }
 
         public static bool InRange(Obj_AI_Base target)
@@ -181,24 +182,38 @@ namespace SimpleLib
             else return false;
         }
 
+        public float GetHealthPercent(Obj_AI_Base unit = null)
+        {
+            if (unit == null)
+                unit = SL.Self;
+            return (unit.Health / unit.MaxHealth) * 100f;
+        }
+
+        public float GetManaPercent(Obj_AI_Hero unit = null)
+        {
+            if (unit == null)
+                unit = SL.Self;
+            return (unit.Mana / unit.MaxMana) * 100f;
+        }
+
         public static void Attack(Obj_AI_Base target)
         {
-            if (OnAttack != null && target != null) OnAttack(Self, target);
+            if (OnAttack != null && target != null) OnAttack(SL.Self, target);
         }
 
         public static float AutoAttackMissileSpeed()
         {
-            return Self.IsMelee() ? float.MaxValue : Self.BasicAttack.MissileSpeed;
+            return SL.Self.IsMelee() ? float.MaxValue : SL.Self.BasicAttack.MissileSpeed;
         }
 
         public static float AutoAttackCastTime()
         {
-            return Self.BasicAttack.SpellCastTime;
+            return SL.Self.BasicAttack.SpellCastTime;
         }
 
         public static double CountKillhits(Obj_AI_Base enemy)
         {
-            return enemy.Health / Self.GetAutoAttackDamage(enemy);
+            return enemy.Health / SL.Self.GetAutoAttackDamage(enemy);
         }
 
         public static float WindUpTime()
@@ -208,7 +223,7 @@ namespace SimpleLib
 
         public static float AnimationTime()
         {
-            return (1 / AutoAttackMissileSpeed() * Self.BasicAttack.SpellCastTime);
+            return (1 / AutoAttackMissileSpeed() * SL.Self.BasicAttack.SpellCastTime);
         }
 
         public static float Latency()
@@ -219,14 +234,14 @@ namespace SimpleLib
         public static bool CanAttack()
         {
             if (_lastAATick <= Environment.TickCount)
-                return Environment.TickCount + Game.Ping / 2 + 25 >= _lastAATick + Self.AttackDelay * 1000 && _attack && IsAllowedToAttack();
+                return Environment.TickCount + Game.Ping / 2 + 25 >= _lastAATick + SL.Self.AttackDelay * 1000 && _attack && IsAllowedToAttack();
             return false;
         }
 
         public static bool CanMove()
         {
             if (_lastAATick <= Environment.TickCount)
-                return Environment.TickCount + Game.Ping / 2 >= _lastAATick + Self.AttackCastDelay * 1000 + _windup && _movement && IsAllowedToMove();
+                return Environment.TickCount + Game.Ping / 2 >= _lastAATick + SL.Self.AttackCastDelay * 1000 + _windup && _movement && IsAllowedToMove();
             return false;
         }
 
@@ -377,7 +392,7 @@ namespace SimpleLib
 
         private static void OnUpdate(EventArgs args)
         {
-            if (MenuGUI.IsChatOpen || !Config.Item("Enabled").GetValue<bool>() || Self.IsChanneling || Self.IsChannelingImportantSpell()) return;
+            if (MenuGUI.IsChatOpen || !Config.Item("Enabled").GetValue<bool>() || SL.Self.IsChannelingImportantSpell()) return;
 
             CheckAutoWindUp();
 
@@ -392,7 +407,7 @@ namespace SimpleLib
 
             if (Config.Item("DrawAARange").GetValue<Circle>().Active)
             {
-                Utility.DrawCircle(Self.Position, AutoAttackRange(), Config.Item("DrawAARange").GetValue<Circle>().Color);
+                Utility.DrawCircle(SL.Self.Position, AutoAttackRange(), Config.Item("DrawAARange").GetValue<Circle>().Color);
             }
 
             if (Config.Item("DrawEnemyAARange").GetValue<Circle>().Active)
@@ -403,15 +418,15 @@ namespace SimpleLib
 
             if (Config.Item("DrawHoldzone").GetValue<Circle>().Active)
             {
-                Utility.DrawCircle(Self.Position, Config.Item("Holdzone").GetValue<Slider>().Value, Config.Item("DrawHoldzone").GetValue<Circle>().Color);
+                Utility.DrawCircle(SL.Self.Position, Config.Item("Holdzone").GetValue<Slider>().Value, Config.Item("DrawHoldzone").GetValue<Circle>().Color);
             }
 
             if (Config.Item("DrawLasthit").GetValue<Circle>().Active || Config.Item("DrawnearKill").GetValue<Circle>().Active)
             {
-                var minionList = MinionManager.GetMinions(Self.Position, AutoAttackRange() + 500, MinionTypes.All, MinionTeam.Enemy, MinionOrderTypes.MaxHealth);
+                var minionList = MinionManager.GetMinions(SL.Self.Position, AutoAttackRange() + 500, MinionTypes.All, MinionTeam.Enemy, MinionOrderTypes.MaxHealth);
                 foreach (var minion in minionList.Where(minion => minion.IsValidTarget(AutoAttackRange() + 500)))
                 {
-                    var attackToKill = Math.Ceiling(minion.MaxHealth / Self.GetAutoAttackDamage(minion, true));
+                    var attackToKill = Math.Ceiling(minion.MaxHealth / SL.Self.GetAutoAttackDamage(minion, true));
                     var hpBarPosition = minion.HPBarPosition;
                     var barWidth = minion.IsMelee() ? 75 : 80;
                     if (minion.HasBuff("turretshield", true))
@@ -419,10 +434,10 @@ namespace SimpleLib
                     var barDistance = (float)(barWidth / attackToKill);
 
                     if (Config.Item("DrawLasthit").GetValue<Circle>().Active &&
-                        minion.Health <= Self.GetAutoAttackDamage(minion, true))
+                        minion.Health <= SL.Self.GetAutoAttackDamage(minion, true))
                         Utility.DrawCircle(minion.Position, minion.BoundingRadius, Config.Item("DrawLasthit").GetValue<Circle>().Color);
                     else if (Config.Item("DrawnearKill").GetValue<Circle>().Active &&
-                             minion.Health <= Self.GetAutoAttackDamage(minion, true) * 2)
+                             minion.Health <= SL.Self.GetAutoAttackDamage(minion, true) * 2)
                         Utility.DrawCircle(minion.Position, minion.BoundingRadius, Config.Item("DrawnearKill").GetValue<Circle>().Color);
                 }
             }
@@ -496,7 +511,7 @@ namespace SimpleLib
                         {
                             if (STS.GetInhibitorsNexus(AutoAttackRange(), 100f) != null)
                             {
-                                Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
+                                SL.Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
                             }
                             return null;
                         }
@@ -523,7 +538,7 @@ namespace SimpleLib
                             {
                                 if (STS.GetInhibitorsNexus(AutoAttackRange(), 100f) != null)
                                 {
-                                    Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
+                                    SL.Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
                                 }
                                 return null;
                             }
@@ -551,7 +566,7 @@ namespace SimpleLib
                         {
                             if (STS.GetInhibitorsNexus(AutoAttackRange(), 100f) != null)
                             {
-                                Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
+                                SL.Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
                             }
                             return null;
                         }
@@ -571,7 +586,7 @@ namespace SimpleLib
                         {
                             if (STS.GetInhibitorsNexus(AutoAttackRange(), 100f) != null)
                             {
-                                Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
+                                SL.Self.IssueOrder(GameObjectOrder.AttackUnit, STS.GetInhibitorsNexus(AutoAttackRange(), 100f));
                             }
                             return null;
                         }
@@ -591,15 +606,13 @@ namespace SimpleLib
 
             var holdAreaRadius = Config.Item("Holdzone").GetValue<Slider>().Value;
 
-            if (Self.Distance(position) < holdAreaRadius)
+            if (SL.Self.Distance(position) < holdAreaRadius)
             {
-                Self.IssueOrder(GameObjectOrder.HoldPosition, Self.Position);
+                SL.Self.IssueOrder(GameObjectOrder.HoldPosition, SL.Self.Position);
                 return;
             }
 
-            var point = Self.ServerPosition +
-            300 * (position.To2D() - Self.ServerPosition.To2D()).Normalized().To3D();
-            Self.IssueOrder(GameObjectOrder.MoveTo, point);
+            SL.Self.IssueOrder(GameObjectOrder.MoveTo, position);
         }
 
         private static void PositonToTarget(Obj_AI_Base target)
@@ -608,8 +621,8 @@ namespace SimpleLib
 
             float point = (AutoAttackRange() / 100) * 80;
 
-            if (Self.ServerPosition.Distance(target.ServerPosition) <= point) MoveTo(Game.CursorPos);
-            else Self.IssueOrder(GameObjectOrder.MoveTo, target.ServerPosition);
+            if (SL.Self.ServerPosition.Distance(target.ServerPosition) <= point) MoveTo(Game.CursorPos);
+            else SL.Self.IssueOrder(GameObjectOrder.MoveTo, target.ServerPosition);
         }
 
         public static void Orbwalk(Obj_AI_Base target, Vector3 positon)
@@ -621,9 +634,9 @@ namespace SimpleLib
                     if (CurrentMode != Mode.None && target.IsValidTarget(AutoAttackRange(target)))
                     {
                         FireBeforeAttack(target);
-                        Self.IssueOrder(GameObjectOrder.AttackUnit, target);
+                        SL.Self.IssueOrder(GameObjectOrder.AttackUnit, target);
                         _lastAATick = Environment.TickCount + Game.Ping / 2;
-                        FireAfterAttack(Self, target);
+                        FireAfterAttack(SL.Self, target);
                     }
                 }
             }
