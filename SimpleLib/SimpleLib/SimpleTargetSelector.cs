@@ -397,8 +397,6 @@ namespace SimpleLib
 
         public static void StsAllyMenu(Menu menu)
         {
-            _stsAllyMenu = menu;
-
             var stsmenu = new Menu("Ally Priorety", "AllySTS");
 
             if (AllyModeMenu)
@@ -421,6 +419,7 @@ namespace SimpleLib
                 }
             }
 
+            _stsAllyMenu = menu;
             _stsAllyMenu.AddSubMenu(stsmenu);
         }
 
@@ -512,19 +511,6 @@ namespace SimpleLib
             }
 
             return false;
-        }
-
-        /// <summary>
-        ///     Checks for collision with yasuo wind wall.
-        /// </summary>
-        public static bool CheckYasuoWall(AttackableUnit target, float selectedRange)
-        {
-            if (!AllEnemys.Any(enemy => enemy.ChampionName.ToLower().Contains("yasuo") && !enemy.IsValidTarget(selectedRange)))
-            {
-                return false;
-            }
-
-            return SimpleCollision.YasuoWallCollision(selectedRange, target);
         }
 
         private static void Game_OnWndProc(WndEventArgs args)
@@ -652,7 +638,7 @@ namespace SimpleLib
                 case Team.Enemy:
                 {
                     if (_focusedTarget != null && _focusedTarget.IsValidTarget(selectRange) &&
-                        !CheckYasuoWall(_focusedTarget, selectRange))
+                        !SimpleCollision.YasuoWallCollision(selectRange, _focusedTarget))
                     {
                         _enemyTarget = _focusedTarget;
                         return _enemyTarget;
@@ -660,7 +646,7 @@ namespace SimpleLib
 
                     if (FocusTargetWithSmite && _focusedTargetWithSmite != null &&
                         _focusedTargetWithSmite.IsValidTarget(selectRange) &&
-                        !CheckYasuoWall(_focusedTargetWithSmite, selectRange))
+                        !SimpleCollision.YasuoWallCollision(selectRange, _focusedTargetWithSmite))
                     {
                         _enemyTarget = _focusedTargetWithSmite;
                         return _enemyTarget;
@@ -685,7 +671,7 @@ namespace SimpleLib
 
             foreach (var enemy in AllEnemys)
             {
-                if (!enemy.IsValidTarget() || IsInvulnerable(enemy) || CheckYasuoWall(enemy, selectRange) ||
+                if (!enemy.IsValidTarget() || IsInvulnerable(enemy) || SimpleCollision.YasuoWallCollision(selectRange, enemy) ||
                     !(Player.Distance(enemy) < selectRange))
                 {
                     continue;

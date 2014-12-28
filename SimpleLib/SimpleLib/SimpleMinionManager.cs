@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using LeagueSharp;
 using LeagueSharp.Common;
@@ -261,23 +262,28 @@ namespace SimpleLib
                     return null;
                 }
 
-                var tempList = LastHitMinions(selectRange, selectTeam, farmDelay);
+                List<Obj_AI_Base> tempList = LastHitMinions(selectRange, selectTeam, farmDelay);
+
+                if (!tempList.Any())
+                    return null;
 
                 foreach (var minion in tempList)
                 {
-                    //if (STS.CheckYasuoWall(minion, selectRange))
-                    //{
-                    //    continue;
-                    //}
+                    if (SimpleCollision.YasuoWallCollision(selectRange, minion))
+                    {
+                        continue;
+                    }
 
                     if (tempMinion == null)
                     {
                         tempMinion = minion;
+                        continue;
                     }
 
                     if (minion.Team != GameObjectTeam.Neutral && MinionPriorety(tempMinion) < MinionPriorety(minion))
                     {
                         tempMinion = minion;
+                        continue;
                     }
 
                     if (minion.Team == GameObjectTeam.Neutral && JunglePriorety(tempMinion) < JunglePriorety(minion))
@@ -295,11 +301,11 @@ namespace SimpleLib
                     return null;
                 }
 
-                List<Obj_AI_Base> tempList = null;
+                List<Obj_AI_Base> tempList = new List<Obj_AI_Base>();
 
                 foreach (var minion in EnemyMinions(selectRange))
                 {
-                    if (!STS.CheckYasuoWall(minion, selectRange) && IsMinion(minion))
+                    if (!SimpleCollision.YasuoWallCollision(selectRange, minion) && IsMinion(minion))
                     {
                         tempList.Add(minion);
                     }
@@ -307,7 +313,7 @@ namespace SimpleLib
 
                 foreach (var minion in NeutralMinions(selectRange))
                 {
-                    if (!STS.CheckYasuoWall(minion, selectRange) && IsMinion(minion))
+                    if (!SimpleCollision.YasuoWallCollision(selectRange, minion) && IsMinion(minion))
                     {
                         tempList.Add(minion);
                     }
@@ -336,8 +342,8 @@ namespace SimpleLib
                     return null;
                 }
 
-                List<Obj_AI_Base> tempAllyMinions = null;
-                List<Obj_AI_Base> tempEnemyMinions = null;
+                List<Obj_AI_Base> tempAllyMinions = new List<Obj_AI_Base>();
+                List<Obj_AI_Base> tempEnemyMinions = new List<Obj_AI_Base>();
 
                 foreach (var minion in EnemyMinions(selectRange))
                 {
@@ -496,7 +502,7 @@ namespace SimpleLib
 
         private static List<Obj_AI_Base> LastHitMinions(float range, MinionTeam selectTeam, int farmDelay = 70)
         {
-            List<Obj_AI_Base> tempList = null;
+            List<Obj_AI_Base> tempList = new List<Obj_AI_Base>();
 
             if (selectTeam == MinionTeam.Enemy || selectTeam == MinionTeam.Neutral)
             {

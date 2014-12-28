@@ -37,11 +37,11 @@ namespace SimpleLib
             SOW.OnEnemyTowerAggro += OnEnemyTowerAggro;
             SOW.OnPlayerTowerAggro += OnPlayerTowerAggro;
             SOW.OnMinionTowerAggro += OnMinionTowerAggro;
-            SOW.OnProcessSpellCast += OnProcessSpellCast;
 
             Game.OnGameSendPacket += OnSendPacket;
             Game.OnGameProcessPacket += OnProcessPacket;
 
+            Obj_AI_Base.OnProcessSpellCast += OnProcessSpellCast;
             Interrupter.OnPossibleToInterrupt += OnPossibleToInterrupt;
             AntiGapcloser.OnEnemyGapcloser += OnGapClose;
         }
@@ -85,7 +85,6 @@ namespace SimpleLib
             OnDraw();
         }
 
-        public virtual void OnLoad() {}
         public virtual void OnCombo() {}
         public virtual void OnMixed() {}
         public virtual void OnLasthit() {}

@@ -44,10 +44,6 @@ namespace YouAssemblyNameSpace
             //skinManager.AddSkin("Reverse Annie");
             //skinManager.AddSkin("Franken Tibbers Annie");
             //skinManager.AddSkin("Panda Annie");
-
-            //STS.MonitorRange = 1000;
-            //STS.EMR = 400;
-            //STS.CurrentDamagetType = STS.DamageType.Physical;
         }
 
         private void OnLoad(EventArgs args)
@@ -69,6 +65,7 @@ namespace YouAssemblyNameSpace
             
             menu.AddToMainMenu();
 
+            STS.CurrentDamagetType = STS.DamageType.Hybrid;
             //Damage type can be set here STS.CurrentDamagetType = STS.DamageType.Hybrid;
         }
 
@@ -96,7 +93,7 @@ namespace YouAssemblyNameSpace
         {
             
         }
-
+        
         public override void OnLaneClear()
         {
             
