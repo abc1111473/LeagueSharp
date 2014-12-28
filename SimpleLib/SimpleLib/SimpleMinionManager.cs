@@ -1,41 +1,12 @@
-﻿using LeagueSharp;
-using LeagueSharp.Common;
-using SharpDX;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Color = System.Drawing.Color;
+using LeagueSharp;
+using LeagueSharp.Common;
 
 namespace SimpleLib
 {
     public class SMM
     {
-        public enum MinionOrderTypes
-        {
-            None,
-            Health,
-            MaxHealth,
-        }
-
-        public enum MinionTeam
-        {
-            Neutral,
-            Ally,
-            Enemy,
-            All,
-        }
-
-        public enum MinionTypes
-        {
-            Ranged,
-            Melee,
-            Siege,
-            Super,
-            All,
-        }
-
         public enum MinionMode
         {
             LastHit,
@@ -43,25 +14,38 @@ namespace SimpleLib
             LaneFreez,
             Closest,
             Furthest,
-            NearMouse,
-            None,
+            NearMouse
         }
-        
-        private static int _farmDelay;
-        public static Obj_AI_Base SelectedMinion = null;
-        private static Obj_AI_Base _focustMinion = null;
 
-        public delegate void UnderTowerFarmH(Obj_AI_Base minion);
-        public static event UnderTowerFarmH UnderTowerFarm;
+        public enum MinionTeam
+        {
+            Neutral,
+            Ally,
+            Enemy,
+            All
+        }
+
+        public enum MinionType
+        {
+            Ranged,
+            Melee,
+            Siege,
+            Super,
+            Ward,
+            All,
+            None
+        }
 
         /// <summary>
-        ///     Returns the List<Obj_AI_Base> of all minions in Range and ExtendMonitarRange
+        ///     Returns the List(Obj_AI_Base) of all enemy minions in Range
         /// </summary>
-        public static List<Obj_AI_Base> AllMinions(float Range, float ExtendMonitarRange = 0)
+        public static List<Obj_AI_Base> EnemyMinions(float range)
         {
             var result = new List<Obj_AI_Base>();
-
-            foreach (var minion in ObjectManager.Get<Obj_AI_Minion>().Where(minion => minion.IsValidTarget(Range + ExtendMonitarRange)))
+            foreach (
+                var minion in
+                    ObjectManager.Get<Obj_AI_Minion>()
+                        .Where(minion => minion.IsValidTarget(range) && minion.IsEnemy && minion.Name != "Beacon"))
             {
                 result.Add(minion);
             }
@@ -69,13 +53,15 @@ namespace SimpleLib
         }
 
         /// <summary>
-        ///     Returns the List<Obj_AI_Base> of all enemy minions in Range and ExtendMonitarRange
+        ///     Returns the List(Obj_AI_Base) of all ally minions in Range
         /// </summary>
-        public static List<Obj_AI_Base> AllEnemyMinions(float Range, float ExtendMonitarRange = 0)
+        public static List<Obj_AI_Base> AllyMinions(float range)
         {
             var result = new List<Obj_AI_Base>();
-
-            foreach (var minion in ObjectManager.Get<Obj_AI_Minion>().Where(minion => minion.IsValidTarget(Range + ExtendMonitarRange) && minion.IsEnemy && minion.Name != "Beacon"))
+            foreach (
+                var minion in
+                    ObjectManager.Get<Obj_AI_Minion>()
+                        .Where(minion => minion.IsValidTarget(range) && minion.IsAlly && minion.Name != "Beacon"))
             {
                 result.Add(minion);
             }
@@ -83,13 +69,18 @@ namespace SimpleLib
         }
 
         /// <summary>
-        ///     Returns the List<Obj_AI_Base> of all ally minions in Range and ExtendMonitarRange
+        ///     Returns the List(Obj_AI_Base) of all neutral monsters in Range and ExtendMonitarRange
         /// </summary>
-        public static List<Obj_AI_Base> AllAllyMinions(float Range, float ExtendMonitarRange = 0)
+        public static List<Obj_AI_Base> NeutralMinions(float range)
         {
             var result = new List<Obj_AI_Base>();
-
-            foreach (var minion in ObjectManager.Get<Obj_AI_Minion>().Where(minion => minion.IsValidTarget(Range + ExtendMonitarRange) && minion.IsAlly && minion.Name != "Beacon"))
+            foreach (
+                var minion in
+                    ObjectManager.Get<Obj_AI_Minion>()
+                        .Where(
+                            minion =>
+                                minion.IsValidTarget(range) && minion.Team == GameObjectTeam.Neutral &&
+                                minion.Name != "Beacon"))
             {
                 result.Add(minion);
             }
@@ -97,28 +88,12 @@ namespace SimpleLib
         }
 
         /// <summary>
-        ///     Returns the List<Obj_AI_Base> of all neutral monsters in Range and ExtendMonitarRange
+        ///     Returns the List(Obj_AI_Base) of all minions in Range
         /// </summary>
-        public static List<Obj_AI_Base> AllNeutralMinions(float Range, float ExtendMonitarRange = 0)
+        public static List<Obj_AI_Base> AllMinions(float range)
         {
             var result = new List<Obj_AI_Base>();
-
-            foreach (var minion in ObjectManager.Get<Obj_AI_Minion>().Where(minion => minion.IsValidTarget(Range + ExtendMonitarRange) && minion.Team == GameObjectTeam.Neutral && minion.Name != "Beacon"))
-            {
-                result.Add(minion);
-            }
-            return result; ;
-        }
-
-        /// <summary>
-        ///     Returns the List<Obj_AI_Base> of all ranged enemy minions in Range and ExtendMonitarRange.
-        ///     It dosent includ siege or cannon minions.
-        /// </summary>
-        public static List<Obj_AI_Base> EnemyRangedMinions(float Range, float ExtendMonitarRange = 0)
-        {
-            var result = new List<Obj_AI_Base>();
-
-            foreach (var minion in ObjectManager.Get<Obj_AI_Minion>().Where(minion => minion.IsValidTarget(Range + ExtendMonitarRange) && minion.IsEnemy && (minion.Name.Contains("ranged") || minion.Name.Contains("wizard") || minion.Name.Contains("caster") && minion.Name != "Beacon")))
+            foreach (var minion in ObjectManager.Get<Obj_AI_Minion>().Where(minion => minion.IsValidTarget(range)))
             {
                 result.Add(minion);
             }
@@ -126,693 +101,480 @@ namespace SimpleLib
         }
 
         /// <summary>
-        ///     Returns the List<Obj_AI_Base> of all enemy melee minions in Range and ExtendMonitarRange
+        ///     Cheaks if unit is a minion or if includeWards = true cheaks for wards as well.
         /// </summary>
-        public static List<Obj_AI_Base> EnemyMeleeMinions(float Range, float ExtendMonitarRange = 0)
+        public static bool IsMinion(Obj_AI_Base unit, bool includeWards = false)
         {
-            var result = new List<Obj_AI_Base>();
+            var name = unit.BaseSkinName.ToLower();
 
-            foreach (var minion in ObjectManager.Get<Obj_AI_Minion>().Where(minion => minion.IsValidTarget(Range + ExtendMonitarRange) && minion.IsEnemy && minion.Name.Contains("melee") && minion.Name != "Beacon"))
-            {
-                result.Add(minion);
-            }
-            return result;
-        }
-
-        /// <summary>
-        ///     Returns the List<Obj_AI_Base> of all enemy siege or cannon minions in Range and ExtendMonitarRange
-        /// </summary>
-        public static List<Obj_AI_Base> EnemySiegeMinions(float Range, float ExtendMonitarRange = 0)
-        {
-            var result = new List<Obj_AI_Base>();
-
-            foreach (var minion in ObjectManager.Get<Obj_AI_Minion>().Where(minion => minion.IsValidTarget(Range + ExtendMonitarRange) && minion.IsEnemy && (minion.Name.Contains("siege") || minion.Name.Contains("cannon")) && minion.Name != "Beacon"))
-            {
-                result.Add(minion);
-            }
-            return result;
-        }
-
-        /// <summary>
-        ///     Returns the List<Obj_AI_Base> of all enemy super minions in Range and ExtendMonitarRange
-        /// </summary>
-        public static List<Obj_AI_Base> EnemySuperMinions(float Range, float ExtendMonitarRange = 0)
-        {
-            var result = new List<Obj_AI_Base>();
-
-            foreach (var minion in ObjectManager.Get<Obj_AI_Minion>().Where(minion => minion.IsValidTarget(Range + ExtendMonitarRange) && minion.IsEnemy && minion.Name.Contains("super") && minion.Name != "Beacon"))
-            {
-                result.Add(minion);
-            }
-            return result;
-        }
-
-        /// <summary>
-        ///     Returns the List<Obj_AI_Base> of all ranged ally minions in Range and ExtendMonitarRange.
-        ///     It dosent includ siege or cannon minions.
-        /// </summary>
-        public static List<Obj_AI_Base> AllyRangedMinions(float Range, float ExtendMonitarRange = 0)
-        {
-            var result = new List<Obj_AI_Base>();
-
-            foreach (var minion in ObjectManager.Get<Obj_AI_Minion>().Where(minion => minion.IsValidTarget(Range + ExtendMonitarRange) && minion.IsAlly && (minion.Name.Contains("ranged") || minion.Name.Contains("wizard") || minion.Name.Contains("caster")) && minion.Name != "Beacon"))
-            {
-                result.Add(minion);
-            }
-            return result;
-        }
-
-        /// <summary>
-        ///     Returns the List<Obj_AI_Base> of all ally melee minions in Range and ExtendMonitarRange
-        /// </summary>
-        public static List<Obj_AI_Base> AllyMeleeMinions(float Range, float ExtendMonitarRange = 0)
-        {
-            var result = new List<Obj_AI_Base>();
-
-            foreach (var minion in ObjectManager.Get<Obj_AI_Minion>().Where(minion => minion.IsValidTarget(Range + ExtendMonitarRange) && minion.IsAlly && minion.Name.Contains("melee") && minion.Name != "Beacon"))
-            {
-                result.Add(minion);
-            }
-            return result;
-        }
-
-        /// <summary>
-        ///     Returns the List<Obj_AI_Base> of all ally siege or cannon minions in Range and ExtendMonitarRange
-        /// </summary>
-        public static List<Obj_AI_Base> AllySiegeMinions(float Range, float ExtendMonitarRange = 0)
-        {
-            var result = new List<Obj_AI_Base>();
-
-            foreach (var minion in ObjectManager.Get<Obj_AI_Minion>().Where(minion => minion.IsValidTarget(Range + ExtendMonitarRange) && minion.IsAlly && (minion.Name.Contains("siege") || minion.Name.Contains("cannon")) && minion.Name != "Beacon"))
-            {
-                result.Add(minion);
-            }
-            return result;
-        }
-
-        /// <summary>
-        ///     Returns the List<Obj_AI_Base> of all ally super minions in Range and ExtendMonitarRange
-        /// </summary>
-        public static List<Obj_AI_Base> AllySuperMinions(float Range, float ExtendMonitarRange = 0)
-        {
-            var result = new List<Obj_AI_Base>();
-
-            foreach (var minion in ObjectManager.Get<Obj_AI_Minion>().Where(minion => minion.IsValidTarget(Range + ExtendMonitarRange) && minion.IsAlly && minion.Name.Contains("super") && minion.Name != "Beacon"))
-            {
-                result.Add(minion);
-            }
-            return result;
-        }
-
-        /// <summary>
-        ///     Initializes the SMM. It subscribes it to Obj_AI_Turret_OnProcessSpellCast 
-        ///     so it can use advanced under tower logic.
-        /// </summary>
-        public static void InitializeSMM()
-        {
-            Obj_AI_Turret.OnProcessSpellCast += Obj_AI_Turret_OnProcessSpellCast;
-        }
-
-        private static int GetPrioretyForMinions(string targetName)
-        {
-            if (targetName.Contains("super")) return 4;
-            else if (targetName.Contains("siege") || targetName.Contains("cannon")) return 3;
-            else if (targetName.Contains("melee")) return 2;
-            else if (targetName.Contains("ranged") || targetName.Contains("wizard") || targetName.Contains("caster")) return 1;
-            else return 0;
-        }
-
-        private static int GetPrioretyForNeutralMonsters(string targetName)
-        {
-            if (targetName.Contains("Baron")) return 4;
-            else if (targetName.Contains("Dragon")) return 3;
-            else if (targetName.Contains("Red") || targetName.Contains("Blue")) return 2;
-            else if (targetName.Contains("wolf") || targetName.Contains("Gromp") || targetName.Contains("Krug")) return 1;
-            else return 0;
-        }
-
-        private static Obj_AI_Base CompereLessHealth(Obj_AI_Base target_1, Obj_AI_Base target_2)
-        {
-            if (target_1.Health < target_2.Health) return target_1;
-
-            if (target_1.Health == target_2.Health) return null;
-
-            return target_2;
-        }
-
-        private static Obj_AI_Base CompereMoreHealth(Obj_AI_Base target_1, Obj_AI_Base target_2)
-        {
-            if (target_1.Health < target_2.Health) return target_2;
-
-            if (target_1.Health == target_2.Health) return null;
-
-            return target_1;
-        }
-
-        private static Obj_AI_Base ComperePriorety(Obj_AI_Base target_1, Obj_AI_Base target_2)
-        {
-            if (GetPrioretyForMinions(target_1.Name) < GetPrioretyForMinions(target_2.Name)) return target_2;
-
-            if (GetPrioretyForMinions(target_1.Name) == GetPrioretyForMinions(target_2.Name)) return null;
-
-            return target_1;
-        }
-
-        private static Obj_AI_Base CompereNeutralMonsterPriorety(Obj_AI_Base target_1, Obj_AI_Base target_2)
-        {
-            if (GetPrioretyForNeutralMonsters(target_1.Name) < GetPrioretyForNeutralMonsters(target_2.Name)) return target_2;
-
-            if (GetPrioretyForNeutralMonsters(target_1.Name) == GetPrioretyForNeutralMonsters(target_2.Name)) return null;
-
-            return target_1;
-        }
-
-        private static Obj_AI_Base CompereClosest(Obj_AI_Base target_1, Obj_AI_Base target_2)
-        {
-            if (Geometry.Distance(target_1, SL.Self) > Geometry.Distance(target_2, SL.Self)) return target_2;
-
-            if (Geometry.Distance(target_1, SL.Self) == Geometry.Distance(target_2, SL.Self)) return null;
-
-            return target_1;
-        }
-
-        private static Obj_AI_Base CompereFurthest(Obj_AI_Base target_1, Obj_AI_Base target_2)
-        {
-            if (Geometry.Distance(target_1, SL.Self) > Geometry.Distance(target_2, SL.Self)) return target_1;
-
-            if (Geometry.Distance(target_1, SL.Self) == Geometry.Distance(target_2, SL.Self)) return null;
-
-            return target_2;
-        }
-
-        private static Obj_AI_Base CompereNearMouse(Obj_AI_Base target_1, Obj_AI_Base target_2)
-        {
-            if (Geometry.Distance(target_1, Game.CursorPos) > Geometry.Distance(target_2, Game.CursorPos)) return target_2;
-
-            if (Geometry.Distance(target_1, Game.CursorPos) == Geometry.Distance(target_2, Game.CursorPos)) return null;
-
-            return target_1;
-        }
-
-        /// <summary>
-        ///     Checks if target is in tower range bouth ally and enemy.
-        /// </summary>
-        public static bool CheckIfUnderTower(Obj_AI_Base targert)
-        {
-            foreach (var turret in ObjectManager.Get<Obj_AI_Turret>().Where(turret => turret.IsValidTarget(775f, false, targert.Position)))
+            if (name.Contains("minion"))
             {
                 return true;
             }
-            return false;
+
+            if (!includeWards)
+            {
+                return false;
+            }
+
+            return name.Contains("ward") || name.Contains("trinket");
         }
 
         /// <summary>
-        ///     Checks if target is in ally tower range.
+        ///     Cheaks if unit is a jungle monster.
         /// </summary>
-        public static bool CheckIfUnderAllyTower(Obj_AI_Base targert)
+        public static bool IsMonster(Obj_AI_Base unit)
         {
-            foreach (var turret in ObjectManager.Get<Obj_AI_Turret>().Where(turret => turret.IsValidTarget(775f, false, targert.Position) && turret.IsAlly))
-            {
-                return true;
-            }
-            return false;
+            return unit.Team == GameObjectTeam.Neutral;
         }
 
         /// <summary>
-        ///     Checks if target is in enemy tower range.
+        ///     Returns the Type of minion for unit
         /// </summary>
-        public static bool CheckIfUnderEnemyTower(Obj_AI_Base targert)
+        public static MinionType GetType(Obj_AI_Base unit)
         {
-            foreach (var turret in ObjectManager.Get<Obj_AI_Turret>().Where(turret => turret.IsValidTarget(775f, false, targert.Position) && turret.IsEnemy))
+            if (!IsMinion(unit, true))
             {
-                return true;
+                return MinionType.None;
             }
-            return false;
+
+            var name = unit.BaseSkinName.ToLower();
+
+            if (name.Contains("super"))
+            {
+                return MinionType.Super;
+            }
+            if (name.Contains("siege") || name.Contains("cannon"))
+            {
+                return MinionType.Siege;
+            }
+            if (name.Contains("melee"))
+            {
+                return MinionType.Melee;
+            }
+            if (name.Contains("ranged") || name.Contains("wizard") || name.Contains("caster"))
+            {
+                return MinionType.Ranged;
+            }
+            if (name.Contains("ward") || name.Contains("trinket"))
+            {
+                return MinionType.Ward;
+            }
+            return MinionType.None;
         }
 
-        private static Obj_AI_Base GetLastHitMinion(MinionTeam selectTime, float Range, float ExtendMonitarRange = 0)
+        /// <summary>
+        ///     Returns the priorety for the unit
+        /// </summary>
+        public static int MinionPriorety(Obj_AI_Base unit)
         {
-            List<Obj_AI_Base> newTarget = new List<Obj_AI_Base>();
-            Obj_AI_Base tempTarget = null;
-
-            switch (selectTime)
+            var type = GetType(unit);
+            switch (type)
             {
-                case MinionTeam.Enemy:
-                    foreach (var minion in AllEnemyMinions(Range + ExtendMonitarRange))
-                    {
-                        var predHealth = HealthPrediction.GetHealthPrediction(minion, ((int)(SL.Self.AttackCastDelay * 1000) - 100 + Game.Ping / 2 + 1000 * (int)SL.Self.Distance(minion) / (int)SL.Self.BasicAttack.MissileSpeed), _farmDelay);
-                        if (predHealth > 0 && predHealth <= SL.Self.GetAutoAttackDamage(minion, true))
-                        {
-                            newTarget.Add(minion);
-                        }
-                    }
-                    if (newTarget.Count == 0) return null;
-                    else if (newTarget.Count == 1) return newTarget.First<Obj_AI_Base>();
-                    else
-                    {
-                        foreach (var minion in newTarget)
-                        {
-                            if (tempTarget == null) tempTarget = minion;
-                            else
-                            {
-                                if (ComperePriorety(tempTarget, minion) != null) tempTarget = ComperePriorety(tempTarget, minion);
-                                else if (CompereLessHealth(tempTarget, minion) != null) tempTarget = CompereLessHealth(tempTarget, minion);
-                                else if (CompereClosest(tempTarget, minion) != null) tempTarget = CompereClosest(tempTarget, minion);
-                                else if (CompereNearMouse(tempTarget, minion) != null) tempTarget = CompereNearMouse(tempTarget, minion);
-                                else tempTarget = minion;
-                            }
-                        }
-                        return tempTarget;
-                    }
-
-                case MinionTeam.Neutral:
-                    foreach (var minion in AllNeutralMinions(Range + ExtendMonitarRange))
-                    {
-                        var predHealth = HealthPrediction.GetHealthPrediction(minion, ((int)(SL.Self.AttackCastDelay * 1000) - 100 + Game.Ping / 2 + 1000 * (int)SL.Self.Distance(minion) / (int)SL.Self.BasicAttack.MissileSpeed), _farmDelay);
-                        if (predHealth > 0 && predHealth <= SL.Self.GetAutoAttackDamage(minion, true))
-                        {
-                            newTarget.Add(minion);
-                        }
-                    }
-                    if (newTarget.Count == 0) return null;
-                    else if (newTarget.Count == 1) return newTarget.First<Obj_AI_Base>();
-                    else
-                    {
-
-                        foreach (var minion in newTarget)
-                        {
-                            if (tempTarget == null) tempTarget = minion;
-                            else
-                            {
-                                if (CompereNeutralMonsterPriorety(tempTarget, minion) != null) tempTarget = CompereNeutralMonsterPriorety(tempTarget, minion);
-                                else if (CompereLessHealth(tempTarget, minion) != null) tempTarget = CompereLessHealth(tempTarget, minion);
-                                else if (CompereClosest(tempTarget, minion) != null) tempTarget = CompereClosest(tempTarget, minion);
-                                else if (CompereNearMouse(tempTarget, minion) != null) tempTarget = CompereNearMouse(tempTarget, minion);
-                                else tempTarget = minion;
-                            }
-                        }
-                        return tempTarget;
-                    }
-
+                case MinionType.Ward:
+                    return 1;
+                case MinionType.Ranged:
+                    return 2;
+                case MinionType.Melee:
+                    return 3;
+                case MinionType.Siege:
+                    return 4;
+                case MinionType.Super:
+                    return 5;
                 default:
-                    return null;
-            }
-        }
-
-        private static Obj_AI_Base GetLaneClearMinion(MinionTeam selectTime, float Range, float ExtendMonitarRange = 0)
-        {
-            Obj_AI_Base tempTarget = null;
-            tempTarget = GetLastHitMinion(selectTime, Range, ExtendMonitarRange);
-
-            if (tempTarget != null) return tempTarget;
-            else if (ShouldWait(Range, ExtendMonitarRange)) return null;
-
-            switch (selectTime)
-            {
-                case MinionTeam.Enemy:
-
-                    List<Obj_AI_Base> newTarget = new List<Obj_AI_Base>();
-
-                    float predHealth = 0;
-                    foreach (var minion in AllEnemyMinions(Range, ExtendMonitarRange))
-                    {
-                        predHealth = HealthPrediction.LaneClearHealthPrediction(minion, (int)((SL.Self.AttackDelay * 1000) * 2f), _farmDelay);
-
-                        if (predHealth >= 2 * SL.Self.GetAutoAttackDamage(minion, true))
-                        {
-                            newTarget.Add(minion);
-                        }
-                    }
-
-                    foreach (var minion in newTarget)
-                    {
-                        if (tempTarget == null) tempTarget = minion;
-                        else
-                        {
-                            if (ComperePriorety(tempTarget, minion) != null) tempTarget = ComperePriorety(tempTarget, minion);
-                            else if (CompereMoreHealth(tempTarget, minion) != null) tempTarget = CompereMoreHealth(tempTarget, minion);
-                            else if (CompereClosest(tempTarget, minion) != null) tempTarget = CompereClosest(tempTarget, minion);
-                            else if (CompereNearMouse(tempTarget, minion) != null) tempTarget = CompereNearMouse(tempTarget, minion);
-                            else tempTarget = minion;
-                        }
-                    }
-                    return tempTarget;
-
-                case MinionTeam.Neutral:
-
-                    foreach (var minion in AllNeutralMinions(Range, ExtendMonitarRange))
-                    {
-                        if (tempTarget == null) tempTarget = minion;
-                        else tempTarget = CompereNeutralMonsterPriorety(tempTarget, minion);
-                    }
-                    return tempTarget;
-
-                default:
-                    return null;
-            }
-        }
-
-        private static Obj_AI_Base GetLaneFreezMinion(MinionTeam selectTime, float Range, float ExtendMonitarRange = 0)
-        {
-            Obj_AI_Base tempTarget = null;
-
-            List<Obj_AI_Base> AllyMinions = new List<Obj_AI_Base>();
-            List<Obj_AI_Base> EnemyMinions = new List<Obj_AI_Base>();
-
-            foreach (var minion in AllAllyMinions(Range, ExtendMonitarRange)) AllyMinions.Add(minion);
-            foreach (var minion in AllEnemyMinions(Range, ExtendMonitarRange)) EnemyMinions.Add(minion);
-
-            if (AllyMinions.Count + 5 < EnemyMinions.Count)
-            {
-                tempTarget = GetLaneClearMinion(selectTime, Range, ExtendMonitarRange);
-            }
-            else
-            {
-                tempTarget = GetLastHitMinion(selectTime, Range, ExtendMonitarRange);
-            }
-            return tempTarget;
-        }
-
-        private static Obj_AI_Base GetClosestMinion(MinionTeam selectTime, float Range, float ExtendMonitarRange = 0)
-        {
-            Obj_AI_Base newTarget = null;
-
-            switch (selectTime)
-            {
-                case MinionTeam.All:
-                    foreach (var minion in AllMinions(Range + ExtendMonitarRange))
-                    {
-                        if (newTarget == null) newTarget = minion;
-                        else if (CompereClosest(newTarget, minion) != null) newTarget = CompereClosest(newTarget, minion);
-                        else if (ComperePriorety(newTarget, minion) != null) newTarget = ComperePriorety(newTarget, minion);
-                        else if (CompereNearMouse(newTarget, minion) != null) newTarget = CompereNearMouse(newTarget, minion);
-                        else if (CompereLessHealth(newTarget, minion) != null) newTarget = CompereLessHealth(newTarget, minion);
-                        else newTarget = minion;
-                    }
-                    return newTarget;
-                case MinionTeam.Ally:
-                    foreach (var minion in AllAllyMinions(Range + ExtendMonitarRange))
-                    {
-                        if (newTarget == null) newTarget = minion;
-                        else if (CompereClosest(newTarget, minion) != null) newTarget = CompereClosest(newTarget, minion);
-                        else if (ComperePriorety(newTarget, minion) != null) newTarget = ComperePriorety(newTarget, minion);
-                        else if (CompereNearMouse(newTarget, minion) != null) newTarget = CompereNearMouse(newTarget, minion);
-                        else if (CompereLessHealth(newTarget, minion) != null) newTarget = CompereLessHealth(newTarget, minion);
-                        else newTarget = minion;
-                    }
-                    return newTarget;
-                case MinionTeam.Enemy:
-                    foreach (var minion in AllEnemyMinions(Range + ExtendMonitarRange))
-                    {
-                        if (newTarget == null) newTarget = minion;
-                        else if (CompereClosest(newTarget, minion) != null) newTarget = CompereClosest(newTarget, minion);
-                        else if (ComperePriorety(newTarget, minion) != null) newTarget = ComperePriorety(newTarget, minion);
-                        else if (CompereNearMouse(newTarget, minion) != null) newTarget = CompereNearMouse(newTarget, minion);
-                        else if (CompereLessHealth(newTarget, minion) != null) newTarget = CompereLessHealth(newTarget, minion);
-                        else newTarget = minion;
-                    }
-                    return newTarget;
-                case MinionTeam.Neutral:
-                    foreach (var minion in AllNeutralMinions(Range + ExtendMonitarRange))
-                    {
-                        if (newTarget == null) newTarget = minion;
-                        else if (CompereClosest(newTarget, minion) != null) newTarget = CompereClosest(newTarget, minion);
-                        else if (ComperePriorety(newTarget, minion) != null) newTarget = ComperePriorety(newTarget, minion);
-                        else if (CompereNearMouse(newTarget, minion) != null) newTarget = CompereNearMouse(newTarget, minion);
-                        else if (CompereLessHealth(newTarget, minion) != null) newTarget = CompereLessHealth(newTarget, minion);
-                        else newTarget = minion;
-                    }
-                    return newTarget;
-                default:
-                    return null;
-            }
-        }
-
-        private static Obj_AI_Base GetFurthestMinion(MinionTeam selectTime, float Range, float ExtendMonitarRange = 0)
-        {
-            Obj_AI_Base newTarget = null;
-
-            switch (selectTime)
-            {
-                case MinionTeam.All:
-                    foreach (var minion in AllMinions(Range + ExtendMonitarRange))
-                    {
-                        if (newTarget == null) newTarget = minion;
-                        else if (CompereFurthest(newTarget, minion) != null) newTarget = CompereFurthest(newTarget, minion);
-                        else if (ComperePriorety(newTarget, minion) != null) newTarget = ComperePriorety(newTarget, minion);
-                        else if (CompereNearMouse(newTarget, minion) != null) newTarget = CompereNearMouse(newTarget, minion);
-                        else if (CompereLessHealth(newTarget, minion) != null) newTarget = CompereLessHealth(newTarget, minion);
-                        else newTarget = minion;
-                    }
-                    return newTarget;
-                case MinionTeam.Ally:
-                    foreach (var minion in AllAllyMinions(Range + ExtendMonitarRange))
-                    {
-                        if (newTarget == null) newTarget = minion;
-                        else if (CompereFurthest(newTarget, minion) != null) newTarget = CompereFurthest(newTarget, minion);
-                        else if (ComperePriorety(newTarget, minion) != null) newTarget = ComperePriorety(newTarget, minion);
-                        else if (CompereNearMouse(newTarget, minion) != null) newTarget = CompereNearMouse(newTarget, minion);
-                        else if (CompereLessHealth(newTarget, minion) != null) newTarget = CompereLessHealth(newTarget, minion);
-                        else newTarget = minion;
-                    }
-                    return newTarget;
-                case MinionTeam.Enemy:
-                    foreach (var minion in AllEnemyMinions(Range + ExtendMonitarRange))
-                    {
-                        if (newTarget == null) newTarget = minion;
-                        else if (CompereFurthest(newTarget, minion) != null) newTarget = CompereFurthest(newTarget, minion);
-                        else if (ComperePriorety(newTarget, minion) != null) newTarget = ComperePriorety(newTarget, minion);
-                        else if (CompereNearMouse(newTarget, minion) != null) newTarget = CompereNearMouse(newTarget, minion);
-                        else if (CompereLessHealth(newTarget, minion) != null) newTarget = CompereLessHealth(newTarget, minion);
-                        else newTarget = minion;
-                    }
-                    return newTarget;
-                case MinionTeam.Neutral:
-                    foreach (var minion in AllNeutralMinions(Range + ExtendMonitarRange))
-                    {
-                        if (newTarget == null) newTarget = minion;
-                        else if (CompereFurthest(newTarget, minion) != null) newTarget = CompereFurthest(newTarget, minion);
-                        else if (ComperePriorety(newTarget, minion) != null) newTarget = ComperePriorety(newTarget, minion);
-                        else if (CompereNearMouse(newTarget, minion) != null) newTarget = CompereNearMouse(newTarget, minion);
-                        else if (CompereLessHealth(newTarget, minion) != null) newTarget = CompereLessHealth(newTarget, minion);
-                        else newTarget = minion;
-                    }
-                    return newTarget;
-                default:
-                    return null;
-            }
-        }
-
-        private static Obj_AI_Base GetNearMouseMinion(MinionTeam selectTime, float Range, float ExtendMonitarRange = 0)
-        {
-            Obj_AI_Base newTarget = null;
-
-            switch (selectTime)
-            {
-                case MinionTeam.All:
-                    foreach (var minion in AllMinions(Range + ExtendMonitarRange))
-                    {
-                        if (newTarget == null) newTarget = minion;
-                        else if (CompereNearMouse(newTarget, minion) != null) newTarget = CompereNearMouse(newTarget, minion);
-                        else if (ComperePriorety(newTarget, minion) != null) newTarget = ComperePriorety(newTarget, minion);
-                        else if (CompereLessHealth(newTarget, minion) != null) newTarget = CompereLessHealth(newTarget, minion);
-                        else if (CompereClosest(newTarget, minion) != null) newTarget = CompereClosest(newTarget, minion);
-                        else newTarget = minion;
-                    }
-                    return newTarget;
-                case MinionTeam.Ally:
-                    foreach (var minion in AllAllyMinions(Range + ExtendMonitarRange))
-                    {
-                        if (newTarget == null) newTarget = minion;
-                        else if (CompereNearMouse(newTarget, minion) != null) newTarget = CompereNearMouse(newTarget, minion);
-                        else if (ComperePriorety(newTarget, minion) != null) newTarget = ComperePriorety(newTarget, minion);
-                        else if (CompereLessHealth(newTarget, minion) != null) newTarget = CompereLessHealth(newTarget, minion);
-                        else if (CompereClosest(newTarget, minion) != null) newTarget = CompereClosest(newTarget, minion);
-                        else newTarget = minion;
-                    }
-                    return newTarget;
-                case MinionTeam.Enemy:
-                    foreach (var minion in AllEnemyMinions(Range + ExtendMonitarRange))
-                    {
-                        if (newTarget == null) newTarget = minion;
-                        else if (CompereNearMouse(newTarget, minion) != null) newTarget = CompereNearMouse(newTarget, minion);
-                        else if (ComperePriorety(newTarget, minion) != null) newTarget = ComperePriorety(newTarget, minion);
-                        else if (CompereLessHealth(newTarget, minion) != null) newTarget = CompereLessHealth(newTarget, minion);
-                        else if (CompereClosest(newTarget, minion) != null) newTarget = CompereClosest(newTarget, minion);
-                        else newTarget = minion;
-                    }
-                    return newTarget;
-                case MinionTeam.Neutral:
-                    foreach (var minion in AllNeutralMinions(Range + ExtendMonitarRange))
-                    {
-                        if (newTarget == null) newTarget = minion;
-                        else if (CompereNearMouse(newTarget, minion) != null) newTarget = CompereNearMouse(newTarget, minion);
-                        else if (ComperePriorety(newTarget, minion) != null) newTarget = ComperePriorety(newTarget, minion);
-                        else if (CompereLessHealth(newTarget, minion) != null) newTarget = CompereLessHealth(newTarget, minion);
-                        else if (CompereClosest(newTarget, minion) != null) newTarget = CompereClosest(newTarget, minion);
-                        else newTarget = minion;
-                    }
-                    return newTarget;
-                default:
-                    return null;
+                    return 1;
             }
         }
 
         /// <summary>
-        ///     Returns whether a minion will soon be for lasthit.
+        ///     Returns the priorety for the set type
         /// </summary>
-        public static bool ShouldWait(float Range, float ExtendMonitarRange = 0)
+        public static int MinionPriorety(MinionType type)
         {
-            foreach (var minion in AllEnemyMinions(Range + ExtendMonitarRange))
+            switch (type)
             {
-                if (HealthPrediction.LaneClearHealthPrediction(minion, (int)((SL.Self.AttackDelay * 1000) * 2f), _farmDelay) <= SL.Self.GetAutoAttackDamage(minion, true))
-                    return true;
+                case MinionType.Ward:
+                    return 1;
+                case MinionType.Ranged:
+                    return 2;
+                case MinionType.Melee:
+                    return 3;
+                case MinionType.Siege:
+                    return 4;
+                case MinionType.Super:
+                    return 5;
+                default:
+                    return 1;
             }
-            return false;
         }
 
-        static void Obj_AI_Turret_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
+        /// <summary>
+        ///     Returns the priorety for the set unit inside that champ.
+        /// </summary>
+        public static int JunglePriorety(Obj_AI_Base unit)
         {
-            if (sender.IsValidTarget(1000, false, SL.Self.Position) && sender.Name.Contains("Turret") && sender.IsAlly)
-            {
-                float healthPred = HealthPrediction.GetHealthPrediction((Obj_AI_Base)args.Target, (int)((SL.Self.AttackDelay * 1000) * 2f));
-                double turretDmg = sender.GetAutoAttackDamage((Obj_AI_Base)args.Target);
-                double selfAADmg = SL.Self.GetAutoAttackDamage((Obj_AI_Base)args.Target, true);
+            var name = unit.BaseSkinName.ToLower();
 
-                if (healthPred <= selfAADmg)
+            if (name == "sru_krugmini" || name == "sru_murkwolfmini" || name == "sru_crab" ||
+                name == "sru_razorbeakmini" || name == "sru_redmini" || name == "sru_bluemini")
+            {
+                return 1;
+            }
+
+            if (name == "sru_krug" || name == "sru_murkwolf" || name == "sru_gromp" || name == "sru_razorbeak")
+            {
+                return 2;
+            }
+
+            if (name == "sru_red" || name == "sru_blue")
+            {
+                return 3;
+            }
+
+            if (name == "sru_dragon")
+            {
+                return 4;
+            }
+
+            if (name == "sru_baron")
+            {
+                return 5;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        ///     Returns the minion for the set params
+        /// </summary>
+        public static Obj_AI_Base GetMinion(float selectRange,
+            MinionMode selectMode,
+            bool includeWards = false,
+            int farmDelay = 70,
+            MinionTeam selectTeam = MinionTeam.Enemy)
+        {
+            Obj_AI_Base tempMinion = null;
+
+            if (selectMode == MinionMode.LastHit)
+            {
+                if (selectTeam == MinionTeam.Ally)
                 {
-                    _focustMinion = (Obj_AI_Base)args.Target;
-                    return;
+                    return null;
+                }
+
+                var tempList = LastHitMinions(selectRange, selectTeam, farmDelay);
+
+                foreach (var minion in tempList)
+                {
+                    //if (STS.CheckYasuoWall(minion, selectRange))
+                    //{
+                    //    continue;
+                    //}
+
+                    if (tempMinion == null)
+                    {
+                        tempMinion = minion;
+                    }
+
+                    if (minion.Team != GameObjectTeam.Neutral && MinionPriorety(tempMinion) < MinionPriorety(minion))
+                    {
+                        tempMinion = minion;
+                    }
+
+                    if (minion.Team == GameObjectTeam.Neutral && JunglePriorety(tempMinion) < JunglePriorety(minion))
+                    {
+                        tempMinion = minion;
+                    }
+                }
+                return tempMinion;
+            }
+
+            if (selectMode == MinionMode.LaneClear)
+            {
+                if (selectTeam == MinionTeam.Ally)
+                {
+                    return null;
+                }
+
+                List<Obj_AI_Base> tempList = null;
+
+                foreach (var minion in EnemyMinions(selectRange))
+                {
+                    if (!STS.CheckYasuoWall(minion, selectRange) && IsMinion(minion))
+                    {
+                        tempList.Add(minion);
+                    }
+                }
+
+                foreach (var minion in NeutralMinions(selectRange))
+                {
+                    if (!STS.CheckYasuoWall(minion, selectRange) && IsMinion(minion))
+                    {
+                        tempList.Add(minion);
+                    }
+                }
+
+                foreach (var minion in tempList)
+                {
+                    if (tempMinion == null)
+                    {
+                        tempMinion = minion;
+                    }
+
+                    if ((minion.Health - ObjectManager.Player.GetAutoAttackDamage(minion) * 1.5f) >
+                        (tempMinion.Health - ObjectManager.Player.GetAutoAttackDamage(minion) * 1.5f))
+                    {
+                        tempMinion = minion;
+                    }
+                }
+                return tempMinion;
+            }
+
+            if (selectMode == MinionMode.LaneFreez)
+            {
+                if (selectTeam == MinionTeam.Ally)
+                {
+                    return null;
+                }
+
+                List<Obj_AI_Base> tempAllyMinions = null;
+                List<Obj_AI_Base> tempEnemyMinions = null;
+
+                foreach (var minion in EnemyMinions(selectRange))
+                {
+                    tempEnemyMinions.Add(minion);
+                }
+
+                foreach (var minion in AllyMinions(selectRange))
+                {
+                    tempAllyMinions.Add(minion);
+                }
+
+                if (tempAllyMinions.Count + 5 < tempEnemyMinions.Count)
+                {
+                    tempMinion = GetMinion(selectRange, MinionMode.LaneClear, includeWards, farmDelay, selectTeam);
                 }
                 else
                 {
-                    UnderTowerFarm((Obj_AI_Base)args.Target);
-                    return;
+                    tempMinion = GetMinion(selectRange, MinionMode.LastHit, includeWards, farmDelay, selectTeam);
                 }
+
+                return tempMinion;
             }
-            else _focustMinion = null;
-        }
 
-        public static void LastHitWithSpell(Spell spell, int minimumNumOfMinionsHit = 1)
-        {
-
-            if (spell.Type == SkillshotType.SkillshotLine)
+            if (selectMode == MinionMode.NearMouse || selectMode == MinionMode.Closest ||
+                selectMode == MinionMode.Furthest)
             {
-                Obj_AI_Base minionToLastHit = null;
-                foreach (var minion in AllEnemyMinions(spell.Range))
+                switch (selectTeam)
                 {
-                    var prediction = spell.GetPrediction(minion);
+                    case MinionTeam.Enemy:
 
-                    if (prediction.Hitchance == HitChance.High)
-                    {
-                        minionToLastHit = minion;
-                        if (minion.Health > SL.Self.GetAutoAttackDamage(minion, true) && spell.IsKillable(minion))
-                            break;
-                    }
+                        foreach (var minion in EnemyMinions(selectRange))
+                        {
+                            if (!IsMinion(minion, includeWards))
+                            {
+                                continue;
+                            }
+
+                            if (tempMinion == null)
+                            {
+                                tempMinion = minion;
+                                continue;
+                            }
+
+                            if ((selectMode == MinionMode.NearMouse &&
+                                 tempMinion.Distance(Game.CursorPos) > minion.Distance(Game.CursorPos)) ||
+                                (selectMode == MinionMode.Closest &&
+                                 tempMinion.Distance(ObjectManager.Player) > minion.Distance(ObjectManager.Player)) ||
+                                (selectMode == MinionMode.Furthest &&
+                                 tempMinion.Distance(ObjectManager.Player) < minion.Distance(ObjectManager.Player)))
+                            {
+                                tempMinion = minion;
+                            }
+                        }
+                        return tempMinion;
+
+                    case MinionTeam.Neutral:
+
+                        foreach (var minion in NeutralMinions(selectRange))
+                        {
+                            if (!IsMinion(minion, includeWards))
+                            {
+                                continue;
+                            }
+
+                            if (tempMinion == null)
+                            {
+                                tempMinion = minion;
+                                continue;
+                            }
+
+                            if ((selectMode == MinionMode.NearMouse &&
+                                 tempMinion.Distance(Game.CursorPos) > minion.Distance(Game.CursorPos)) ||
+                                (selectMode == MinionMode.Closest &&
+                                 tempMinion.Distance(ObjectManager.Player) > minion.Distance(ObjectManager.Player)) ||
+                                (selectMode == MinionMode.Furthest &&
+                                 tempMinion.Distance(ObjectManager.Player) < minion.Distance(ObjectManager.Player)))
+                            {
+                                tempMinion = minion;
+                            }
+                        }
+                        return tempMinion;
+
+                    case MinionTeam.Ally:
+
+                        foreach (var minion in AllyMinions(selectRange))
+                        {
+                            if (!IsMinion(minion, includeWards))
+                            {
+                                continue;
+                            }
+
+                            if (tempMinion == null)
+                            {
+                                tempMinion = minion;
+                                continue;
+                            }
+
+                            if ((selectMode == MinionMode.NearMouse &&
+                                 tempMinion.Distance(Game.CursorPos) > minion.Distance(Game.CursorPos)) ||
+                                (selectMode == MinionMode.Closest &&
+                                 tempMinion.Distance(ObjectManager.Player) > minion.Distance(ObjectManager.Player)) ||
+                                (selectMode == MinionMode.Furthest &&
+                                 tempMinion.Distance(ObjectManager.Player) < minion.Distance(ObjectManager.Player)))
+                            {
+                                tempMinion = minion;
+                            }
+                        }
+                        return tempMinion;
+
+                    default:
+
+                        foreach (var minion in AllMinions(selectRange))
+                        {
+                            if (!IsMinion(minion, includeWards))
+                            {
+                                continue;
+                            }
+
+                            if (tempMinion == null)
+                            {
+                                tempMinion = minion;
+                                continue;
+                            }
+
+                            if ((selectMode == MinionMode.NearMouse &&
+                                 tempMinion.Distance(Game.CursorPos) > minion.Distance(Game.CursorPos)) ||
+                                (selectMode == MinionMode.Closest &&
+                                 tempMinion.Distance(ObjectManager.Player) > minion.Distance(ObjectManager.Player)) ||
+                                (selectMode == MinionMode.Furthest &&
+                                 tempMinion.Distance(ObjectManager.Player) < minion.Distance(ObjectManager.Player)))
+                            {
+                                tempMinion = minion;
+                            }
+                        }
+                        return tempMinion;
                 }
-                if (minionToLastHit != null) spell.Cast(minionToLastHit);
             }
-            else if (spell.Type == SkillshotType.SkillshotCircle)
-            {
-                var farmLocation = MinionManager.GetBestCircularFarmLocation(AllEnemyMinions(spell.Range).Select(minion => minion.ServerPosition.To2D()).ToList(), spell.Width, spell.Range);
-
-                if (farmLocation.MinionsHit >= minimumNumOfMinionsHit)
-                    spell.Cast(farmLocation.Position);
-            }
-            else if (spell.Type == SkillshotType.SkillshotCone)
-            {
-                var farmLocation = MinionManager.GetBestCircularFarmLocation(AllEnemyMinions(spell.Range).Select(minion => minion.ServerPosition.To2D()).ToList(), spell.Width, spell.Range);
-
-                if (farmLocation.MinionsHit >= minimumNumOfMinionsHit)
-                    spell.Cast(farmLocation.Position);
-            }
-            else if (spell.IsSkillshot == false)
-            {
-                Obj_AI_Base minionToLastHit = null;
-                foreach (var minion in AllEnemyMinions(spell.Range))
-                {
-                    minionToLastHit = minion;
-                    if (minion.Health > SL.Self.GetAutoAttackDamage(minion, true) && spell.IsKillable(minion))
-                        break;
-                }
-                if (minionToLastHit != null) spell.Cast(minionToLastHit);
-            }
-            else return;
+            return null;
         }
 
         /// <summary>
-        ///     Returns minion for the Range, SelectMode, ExtendMonitarRange, MinionTeam, FarmDelay. 
-        ///     If you want to use this you will have to put it in OnGameUpdate becouse SMM dosent have any supscriptions to events.
+        ///     Returns whether a minion will soon be for lasthit with AA.
         /// </summary>
-        public static Obj_AI_Base GetTarget(float Range, MinionMode selectMode, float ExtendMonitarRange = 0, MinionTeam selectTime = MinionTeam.Enemy, int FarmDelay = 70)
+        public static bool ShouldWait(float range, int farmDelay = 70)
         {
-            _farmDelay = FarmDelay;
-
-            switch (selectMode)
-            {
-                case MinionMode.LastHit:
-                    return GetLastHitMinion(selectTime, Range, ExtendMonitarRange);
-
-                case MinionMode.LaneClear:
-                    return GetLaneClearMinion(selectTime, Range, ExtendMonitarRange);
-
-                case MinionMode.LaneFreez:
-                    return GetLaneFreezMinion(selectTime, Range, ExtendMonitarRange);
-
-                case MinionMode.Closest:
-                    return GetClosestMinion(selectTime, Range, ExtendMonitarRange);
-
-                case MinionMode.Furthest:
-                    return GetFurthestMinion(selectTime, Range, ExtendMonitarRange);
-
-                case MinionMode.NearMouse:
-                    return GetNearMouseMinion(selectTime, Range, ExtendMonitarRange);
-
-                default:
-                    return null;
-            }
+            return
+                EnemyMinions(range)
+                    .Any(
+                        minion =>
+                            HealthPrediction.LaneClearHealthPrediction(
+                                minion,
+                                ((int) (ObjectManager.Player.AttackCastDelay * 1000) - 100 + Game.Ping / 2 +
+                                 1000 * (int) ObjectManager.Player.Distance(minion) / (int) ObjectManager.Player.BasicAttack.MissileSpeed),
+                                farmDelay) <= ObjectManager.Player.GetAutoAttackDamage(minion));
         }
 
-        public static void Target(float Range, MinionMode selectMode, float ExtendMonitarRange = 0, MinionTeam selectTime = MinionTeam.Enemy, int FarmDelay = 70)
+        private static List<Obj_AI_Base> LastHitMinions(float range, MinionTeam selectTeam, int farmDelay = 70)
         {
-            _farmDelay = FarmDelay;
+            List<Obj_AI_Base> tempList = null;
 
-            if (_focustMinion != null)
+            if (selectTeam == MinionTeam.Enemy || selectTeam == MinionTeam.Neutral)
             {
-                SelectedMinion = _focustMinion;
-                return;
+                foreach (var minion in EnemyMinions(range))
+                {
+                    if (!IsMinion(minion))
+                    {
+                        continue;
+                    }
+
+                    var predHealth = HealthPrediction.GetHealthPrediction(
+                        minion,
+                        ((int) (ObjectManager.Player.AttackCastDelay * 1000) - 100 + Game.Ping / 2 +
+                         1000 * (int) ObjectManager.Player.Distance(minion) / (int) ObjectManager.Player.BasicAttack.MissileSpeed), farmDelay);
+                    if (predHealth > 0 && (predHealth + 2f) <= ObjectManager.Player.GetAutoAttackDamage(minion, true))
+                    {
+                        tempList.Add(minion);
+                    }
+                }
+
+                foreach (var minion in NeutralMinions(range))
+                {
+                    if (!IsMonster(minion))
+                    {
+                        continue;
+                    }
+
+                    var predHealth = HealthPrediction.GetHealthPrediction(
+                        minion,
+                        ((int) (ObjectManager.Player.AttackCastDelay * 1000) - 100 + Game.Ping / 2 +
+                         1000 * (int) ObjectManager.Player.Distance(minion) / (int) ObjectManager.Player.BasicAttack.MissileSpeed), farmDelay);
+                    if (predHealth > 0 && (predHealth + 2f) <= ObjectManager.Player.GetAutoAttackDamage(minion, true))
+                    {
+                        tempList.Add(minion);
+                    }
+                }
+
+                return tempList;
             }
 
-            switch (selectMode)
+            if (selectTeam == MinionTeam.Ally)
             {
-                case MinionMode.LastHit:
-                    SelectedMinion = GetLastHitMinion(selectTime, Range, ExtendMonitarRange);
-                    break;
+                foreach (var minion in AllyMinions(range))
+                {
+                    if (!IsMonster(minion))
+                    {
+                        continue;
+                    }
 
-                case MinionMode.LaneClear:
-                    SelectedMinion = GetLaneClearMinion(selectTime, Range, ExtendMonitarRange);
-                    break;
-
-                case MinionMode.LaneFreez:
-                    SelectedMinion = GetLaneFreezMinion(selectTime, Range, ExtendMonitarRange);
-                    break;
-
-                case MinionMode.Closest:
-                    SelectedMinion = GetClosestMinion(selectTime, Range, ExtendMonitarRange);
-                    break;
-
-                case MinionMode.Furthest:
-                    SelectedMinion = GetFurthestMinion(selectTime, Range, ExtendMonitarRange);
-                    break;
-
-                case MinionMode.NearMouse:
-                    SelectedMinion = GetNearMouseMinion(selectTime, Range, ExtendMonitarRange);
-                    break;
-
-                default:
-                    SelectedMinion = null;
-                    break;
+                    var predHealth = HealthPrediction.GetHealthPrediction(
+                        minion,
+                        ((int) (ObjectManager.Player.AttackCastDelay * 1000) - 100 + Game.Ping / 2 +
+                         1000 * (int) ObjectManager.Player.Distance(minion) / (int) ObjectManager.Player.BasicAttack.MissileSpeed), farmDelay);
+                    if (predHealth > 0 && (predHealth + 2f) <= ObjectManager.Player.GetAutoAttackDamage(minion, true))
+                    {
+                        tempList.Add(minion);
+                    }
+                }
+                return tempList;
             }
+
+            foreach (var minion in AllMinions(range))
+            {
+                if (!IsMonster(minion))
+                {
+                    continue;
+                }
+
+                var predHealth = HealthPrediction.GetHealthPrediction(
+                    minion,
+                    ((int) (ObjectManager.Player.AttackCastDelay * 1000) - 100 + Game.Ping / 2 +
+                     1000 * (int) ObjectManager.Player.Distance(minion) / (int) ObjectManager.Player.BasicAttack.MissileSpeed), farmDelay);
+                if (predHealth > 0 && (predHealth + 2f) <= ObjectManager.Player.GetAutoAttackDamage(minion, true))
+                {
+                    tempList.Add(minion);
+                }
+            }
+            return tempList;
         }
     }
 }

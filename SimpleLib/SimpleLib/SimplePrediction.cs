@@ -1,16 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using LeagueSharp;
+﻿using LeagueSharp;
 using LeagueSharp.Common;
 using SharpDX;
-using Color = System.Drawing.Color;
 
 namespace SimpleLib
 {
-    public class SP
+    public static class SimplePrediction
     {
+
+        public static Vector3 MeleeMovmentPrediction(Obj_AI_Base target)
+        {
+            var predictionSpell = new Spell(SpellSlot.Unknown, (ObjectManager.Player.AttackRange + ObjectManager.Player.BoundingRadius));
+
+            predictionSpell.SetTargetted(ObjectManager.Player.BasicAttack.SpellCastTime, ObjectManager.Player.BasicAttack.MissileSpeed);
+
+            return predictionSpell.GetPrediction(target).UnitPosition;
+        }
     }
 }

@@ -1,6 +1,5 @@
 0.0.1.0:
 
-	Added new integration
 	Under tower farming
 	Cheak for invariable target
 	Some fixes

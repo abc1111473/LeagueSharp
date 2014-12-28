@@ -1,185 +1,108 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using LeagueSharp;
 using LeagueSharp.Common;
-using SharpDX;
-using Color = System.Drawing.Color;
 
 namespace SimpleLib
 {
     public class SL
     {
-        public Spell Q;
-        public Spell W;
-        public Spell E;
-        public Spell R;
+        public static Spell Q;
+        public static Spell W;
+        public static Spell E;
+        public static Spell R;
 
-        public static Obj_AI_Hero Self = ObjectManager.Player;
+        public static Obj_AI_Hero Player = ObjectManager.Player;
 
-        public Obj_AI_Hero EnemyTarget = STS.SelectedEnemyTarget;
-        public Obj_AI_Hero AllyTarget = STS.SelectedAllyTarget;
+        public static SAM.LevelUpManager LevelUpManager = new SAM.LevelUpManager();
+        public static SAM.SkinManager SkinManager = new SAM.SkinManager();
 
-        public SAM.LevelUpManager levelUpManager = new SAM.LevelUpManager();
-        public SAM.SkinManager skinManager = new SAM.SkinManager();
+        public static Spell Barrier = new Spell(Player.GetSpellSlot("SummonerBarrier"));
+        public static Spell Clairvoyance = new Spell(Player.GetSpellSlot("SummonerClairvoyance"));
+        public static Spell Clarity = new Spell(Player.GetSpellSlot("SummonerMana"), 600);
+        public static Spell Cleanse = new Spell(Player.GetSpellSlot("SummonerBoost"));
+        public static Spell Exhaust = new Spell(Player.GetSpellSlot("SummonerExhaust"), 650);
+        public static Spell Flash = new Spell(Player.GetSpellSlot("SummonerFlash"), 400);
+        public static Spell Ghost = new Spell(Player.GetSpellSlot("SummonerHaste"));
+        public static Spell Heal = new Spell(Player.GetSpellSlot("SummonerHeal"), 700);
+        public static Spell Ignite = new Spell(Player.GetSpellSlot("SummonerDot"), 600);
+        public static Spell Revive = new Spell(Player.GetSpellSlot("SummonerRevive"));
+        public static Spell Smite = new Spell(Player.GetSpellSlot("SummonerSmite"), 700);
+        public static Spell Teleport = new Spell(Player.GetSpellSlot("SummonerTeleport"));
 
-        public SL()
+        public void InitSimpleLib()
         {
-        }
+            SOW.OnDraw += SOW_OnDraw;
+            SOW.OnUpdate += SOW_OnUpdate;
+            SOW.OnAllyTowerAggro += OnAllyTowerAggro;
+            SOW.OnEnemyTowerAggro += OnEnemyTowerAggro;
+            SOW.OnPlayerTowerAggro += OnPlayerTowerAggro;
+            SOW.OnMinionTowerAggro += OnMinionTowerAggro;
+            SOW.OnProcessSpellCast += OnProcessSpellCast;
 
-        public void InitSL()
-        {
-            Game.OnGameUpdate += Game_OnGameUpdate;
-            Drawing.OnDraw += Drawing_OnDraw;
-            Interrupter.OnPossibleToInterrupt += OnPossibleToInterrupt;
-            AntiGapcloser.OnEnemyGapcloser += OnGapClose;
             Game.OnGameSendPacket += OnSendPacket;
             Game.OnGameProcessPacket += OnProcessPacket;
-            Obj_AI_Base.OnProcessSpellCast += OnProcessSpell;
-            SOW.AfterAttack += OnAfterAttack;
-            SOW.OnAttack += OnAttack;
-            SOW.BeforeAttack += OnBeforeAttack;
-            SMM.UnderTowerFarm += UnderTowerFarm;
+
+            Interrupter.OnPossibleToInterrupt += OnPossibleToInterrupt;
+            AntiGapcloser.OnEnemyGapcloser += OnGapClose;
         }
 
-        /// <summary>
-        ///     Returns name of the spell in the set SpellSlot and set unit.
-        ///     If unit is null then returns the name of the spell in Players SpellSlot.
-        /// </summary>
-        public string GetSpellName(SpellSlot slot, Obj_AI_Base unit = null)
+        public void InitSimpleLib(float Range)
         {
-            return unit != null ? unit.Spellbook.GetSpell(slot).Name : SL.Self.Spellbook.GetSpell(slot).Name;
+            STS.MonitorRange = Range;
+            InitSimpleLib();
         }
-
-        /// <summary>
-        ///     Returns current health procent for the selected unit.
-        ///     If unit is null then returns current health procent for the player.
-        /// </summary>
-        public float GetHealthPercent(Obj_AI_Base unit = null)
-        {
-            if (unit == null)
-                unit = SL.Self;
-            return (unit.Health / unit.MaxHealth) * 100f;
-        }
-
-        /// <summary>
-        ///     Returns current mana procent for the selected unit.
-        ///     If unit is null then returns current mana procent for the player.
-        /// </summary>
-        public float GetManaPercent(Obj_AI_Hero unit = null)
-        {
-            if (unit == null)
-                unit = SL.Self;
-            return (unit.Mana / unit.MaxMana) * 100f;
-        }
-
-        public bool EnemysInRange(float range, int min = 1, Obj_AI_Hero unit = null)
-        {
-            if (unit == null)
-                unit = Self;
-            return min <= STS.AllEnemys.Count(hero => hero.Distance(unit) < range && hero.IsValidTarget());
-        }
-
-        public bool EnemysInRange(float range, int min, Vector3 pos)
-        {
-            return min <= STS.AllEnemys.Count(hero => hero.Position.Distance(pos) < range && hero.IsValidTarget());
-        }
-
-        private void Game_OnGameUpdate(EventArgs args)
+        
+        private void SOW_OnUpdate(SOW.Mode currentMode, EventArgs args)
         {
             switch (SOW.CurrentMode)
             {
                 case SOW.Mode.Combo:
                     OnCombo();
                     break;
-                case SOW.Mode.Harass:
-                    OnHarass();
-                    break;
-                case SOW.Mode.LaneClear:
-                    OnLaneClear();
+                case SOW.Mode.Mixed:
+                    OnMixed();
                     break;
                 case SOW.Mode.Lasthit:
                     OnLasthit();
                     break;
+                case SOW.Mode.LaneClear:
+                    OnLaneClear();
+                    break;
+                case SOW.Mode.LaneFreeze:
+                    OnLaneFreeze();
+                    break;
+                case SOW.Mode.Flee:
+                    OnFlee();
+                    break;
                 case SOW.Mode.None:
-                    OnStandby();
                     break;
             }
-            OnPassive();
+            OnUpdate();
         }
 
-        private void Drawing_OnDraw(EventArgs args)
+        private void SOW_OnDraw(EventArgs args)
         {
             OnDraw();
         }
-        public virtual void Presets()
-        {
-        }
 
-        public virtual void OnDraw()
-        {
-        }
-
-        public virtual void OnBeforeAttack(SOW.BeforeAttackEventArgs args)
-        {
-        }
-
-        public virtual void OnAttack(Obj_AI_Base unit, Obj_AI_Base target)
-        {
-        }
-
-        public virtual void OnAfterAttack(Obj_AI_Base unit, Obj_AI_Base target)
-        {
-        }
-
-        public virtual void OnProcessSpell(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
-        {
-        }
-
-        public virtual void OnPossibleToInterrupt(Obj_AI_Base unit, InterruptableSpell spell)
-        {
-        }
-
-        public virtual void OnGapClose(ActiveGapcloser gapcloser)
-        {
-        }
-
-        public virtual void OnSendPacket(GamePacketEventArgs args)
-        {
-        }
-
-        public virtual void OnProcessPacket(GamePacketEventArgs args)
-        {
-        }
-
-        public virtual void OnStandby()
-        {
-        }
-
-        public virtual void OnLasthit()
-        {
-        }
-
-        public virtual void OnLaneClear()
-        {
-        }
-
-        public virtual void OnHarass()
-        {
-        }
-
-        public virtual void OnCombo()
-        {
-        }
-
-        public virtual void OnPassive()
-        {
-        }
-
-        public virtual void UnderTowerFarm(Obj_AI_Base minion)
-        {
-        }
+        public virtual void OnLoad() {}
+        public virtual void OnCombo() {}
+        public virtual void OnMixed() {}
+        public virtual void OnLasthit() {}
+        public virtual void OnLaneClear() {}
+        public virtual void OnLaneFreeze() {}
+        public virtual void OnFlee() {}
+        public virtual void OnMinionTowerAggro(Obj_AI_Turret sender, Obj_AI_Base target) {}
+        public virtual void OnPlayerTowerAggro(Obj_AI_Turret sender, Obj_AI_Base target) {}
+        public virtual void OnEnemyTowerAggro(Obj_AI_Turret sender, Obj_AI_Base target) {}
+        public virtual void OnAllyTowerAggro(Obj_AI_Turret sender, Obj_AI_Base target) {}
+        public virtual void Presets() {}
+        public virtual void OnDraw() {}
+        public virtual void OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args) {}
+        public virtual void OnPossibleToInterrupt(Obj_AI_Base unit, InterruptableSpell spell) {}
+        public virtual void OnGapClose(ActiveGapcloser gapcloser) {}
+        public virtual void OnSendPacket(GamePacketEventArgs args) {}
+        public virtual void OnProcessPacket(GamePacketEventArgs args) {}
+        public virtual void OnUpdate() {}
     }
 }

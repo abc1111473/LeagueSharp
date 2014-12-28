@@ -1,717 +1,586 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using LeagueSharp;
 using LeagueSharp.Common;
 using SharpDX;
-using Color = System.Drawing.Color;
+using Collision = LeagueSharp.Common.Collision;
 
 namespace SimpleLib
 {
     public class STS
     {
-        public static Menu Config;
-        public static IEnumerable<Obj_AI_Hero> AllEnemys = ObjectManager.Get<Obj_AI_Hero>().Where(hero => hero.IsEnemy);
-        public static IEnumerable<Obj_AI_Hero> AllAllys = ObjectManager.Get<Obj_AI_Hero>().Where(hero => hero.IsAlly);
+        public enum DamageType
+        {
+            Magical,
+            Physical,
+            Hybrid,
+            True
+        }
 
         public enum Mode
         {
-            LowHP,
+            Auto,
+            LowHp,
             Priority,
-            MostAP,
-            MostAD,
+            MostAp,
+            MostAd,
             Closest,
             NearMouse,
+            Less,
             None
         }
-        public static string[] APCarry = { "Ahri", "Akali", "Anivia", "Annie", "Brand", "Cassiopeia", "Diana", "FiddleSticks", "Fizz", "Gragas", "Heimerdinger", "Karthus", "Kassadin", "Katarina", "Kayle", "Kennen", "Leblanc", "Lissandra", "Lux", "Malzahar", "Mordekaiser", "Morgana", "Nidalee", "Orianna", "Ryze", "Sion", "Swain", "Syndra", "Teemo", "TwistedFate", "Veigar", "Viktor", "Vladimir", "Xerath", "Ziggs", "Zyra", "Velkoz" };
-        public static string[] Support = { "Blitzcrank", "Janna", "Karma", "Leona", "Lulu", "Nami", "Sona", "Soraka", "Thresh", "Zilean" };
-        public static string[] Tank = { "Amumu", "Chogath", "DrMundo", "Galio", "Hecarim", "Malphite", "Maokai", "Nasus", "Rammus", "Sejuani", "Shen", "Singed", "Skarner", "Volibear", "Warwick", "Yorick", "Zac", "Nunu", "Taric", "Alistar", "Garen", "Nautilus", "Braum" };
-        public static string[] ADCarry = { "Ashe", "Caitlyn", "Corki", "Draven", "Ezreal", "Graves", "KogMaw", "MissFortune", "Quinn", "Sivir", "Talon", "Tristana", "Twitch", "Urgot", "Varus", "Vayne", "Zed", "Jinx", "Yasuo", "Lucian", "Kalista" };
-        public static string[] Bruiser = { "Darius", "Elise", "Evelynn", "Fiora", "Gangplank", "Gnar", "Jayce", "Pantheon", "Irelia", "JarvanIV", "Jax", "Khazix", "LeeSin", "Nocturne", "Olaf", "Poppy", "Renekton", "Rengar", "Riven", "Shyvana", "Trundle", "Tryndamere", "Udyr", "Vi", "MonkeyKing", "XinZhao", "Aatrox", "Rumble", "Shaco", "MasterYi" };
 
-        public static Obj_AI_Hero SelectedEnemyTarget;
-        public static Obj_AI_Hero SelectedAllyTarget;
+        public enum Team
+        {
+            Enemy,
+            Ally
+        }
 
-        private static float _range = SL.Self.AttackRange;
-        private static bool _enableSTS = true;
-        private static bool _updateTarget = true;
-        private static Mode _currentEnemyMode;
-        private static Mode _currentAllyMode;
-        private static bool _enableEMR = true;
-        private static int _extendMonitarRange = 400;
-        private static bool _smiteTarget = false;
-        private static bool _forceMode = false;
-        private static bool _focusTarget = true;
+        private static readonly string[] ApCarry =
+        {
+            "Ahri", "Akali", "Anivia", "Annie", "Brand", "Cassiopeia", "Diana",
+            "FiddleSticks", "Fizz", "Gragas", "Heimerdinger", "Karthus", "Kassadin", "Katarina", "Kayle", "Kennen",
+            "Leblanc", "Lissandra", "Lux", "Malzahar", "Mordekaiser", "Morgana", "Nidalee", "Orianna", "Ryze", "Sion",
+            "Swain", "Syndra", "Teemo", "TwistedFate", "Veigar", "Viktor", "Vladimir", "Xerath", "Ziggs", "Zyra",
+            "Velkoz"
+        };
+
+        private static readonly string[] Support =
+        {
+            "Blitzcrank", "Janna", "Karma", "Leona", "Lulu", "Nami", "Sona",
+            "Soraka", "Thresh", "Zilean"
+        };
+
+        private static readonly string[] Tank =
+        {
+            "Amumu", "Chogath", "DrMundo", "Galio", "Hecarim", "Malphite",
+            "Maokai", "Nasus", "Rammus", "Sejuani", "Shen", "Singed", "Skarner", "Volibear", "Warwick", "Yorick", "Zac",
+            "Nunu", "Taric", "Alistar", "Garen", "Nautilus", "Braum"
+        };
+
+        private static readonly string[] AdCarry =
+        {
+            "Ashe", "Caitlyn", "Corki", "Draven", "Ezreal", "Graves", "KogMaw",
+            "MissFortune", "Quinn", "Sivir", "Talon", "Tristana", "Twitch", "Urgot", "Varus", "Vayne", "Zed", "Jinx",
+            "Yasuo", "Lucian", "Kalista"
+        };
+
+        private static readonly string[] Bruiser =
+        {
+            "Darius", "Elise", "Evelynn", "Fiora", "Gangplank", "Gnar", "Jayce",
+            "Pantheon", "Irelia", "JarvanIV", "Jax", "Khazix", "LeeSin", "Nocturne", "Olaf", "Poppy", "Renekton",
+            "Rengar", "Riven", "Shyvana", "Trundle", "Tryndamere", "Udyr", "Vi", "MonkeyKing", "XinZhao", "Aatrox",
+            "Rumble", "Shaco", "MasterYi", "RekSai"
+        };
+
+        private static Menu _stsMenu;
+        private static Menu _stsAllyMenu;
+        public static Obj_AI_Hero Player = ObjectManager.Player;
+        private static float _monitorRange = Player.AttackRange;
+        private static int _extendedMonitorRange = 400;
+        private static DamageType _currentDamageType = DamageType.Hybrid;
+        private static Obj_AI_Hero _focusedTarget;
+        private static Obj_AI_Hero _focusedTargetWithSmite;
+        private static bool _enemySearch = true;
         private static bool _enableAllyMenu = true;
-        private static Obj_AI_Hero _focustTarget = null;
-        private static List<Obj_AI_Hero> _focustEnemySmiteTarget = new List<Obj_AI_Hero>();
-        private static bool EnemyYasuo = AllEnemys.Any(hero => hero.BaseSkinName.Contains("yasuo") && hero.IsEnemy);
+        private static bool _enableEmr = true;
+        private static bool _focusSelectedTarget = true;
+        private static bool _focusTargetWithSmite = true;
+        private static bool _enemyModeMenu = true;
+        private static bool _damageTyprMenu = true;
+        private static bool _allyModeMenu = true;
+        private static Mode _enemyMode = Mode.Auto;
+        private static Mode _allyMode = Mode.Auto;
+        private static Obj_AI_Hero _enemyTarget;
+        private static Obj_AI_Hero _allyTarget;
+        public static IEnumerable<Obj_AI_Hero> AllEnemys = ObjectManager.Get<Obj_AI_Hero>().Where(hero => hero.IsEnemy);
+        public static IEnumerable<Obj_AI_Hero> AllAllys = ObjectManager.Get<Obj_AI_Hero>().Where(hero => hero.IsAlly);
 
-        public static void SetMode(Mode setMode)
+        /// <summary>
+        ///     Enable or disable Ally Menu in the STS Menu
+        /// </summary>
+        public static bool EnableAllyMenu
         {
-            _forceMode = true;
-            CurrentEnemyMode = setMode;
-        }
-
-        public static void ForceMode(bool force = false)
-        {
-            _forceMode = force;
-        }
-
-        public static bool GetForceMode()
-        {
-            return _forceMode;
+            get { return _enableAllyMenu; }
+            set { _enableAllyMenu = value; }
         }
 
         /// <summary>
-        ///     Sets if ally menu is included in the STS menu.
+        ///     Enable or disable Extended Monitor Range in the STS Menu
         /// </summary>
-        public static void EnableAllyMenu(bool setAllyMenu)
+        public static bool EnableEMR
         {
-            _enableAllyMenu = setAllyMenu;
-        }
-
-        public static bool IsThereYasuoOnTheEnemyTeam
-        {
-            get { return EnemyYasuo; }
+            get { return _enableEmr; }
+            set { _enableEmr = value; }
         }
 
         /// <summary>
-        ///     Returns the enemy target that has Summener Spell Smite.
+        ///     Enable or disable FocusSelectedTarget
         /// </summary>
-        public static List<Obj_AI_Hero> EnemyWithSmite()
+        public static bool FocusSelectedTarget
         {
-            return _focustEnemySmiteTarget;
+            get { return _focusSelectedTarget; }
+            set { _focusSelectedTarget = value; }
         }
 
         /// <summary>
-        ///     Overrides SelectedTarget with newTarget.
-        ///     It disables searching for the new target and it has to be enabled manually with DisableTargetOverride().
+        ///     Enable or disable focusing target with smite
         /// </summary>
-        public void OverrideTarget(Obj_AI_Hero newTarget)
+        public static bool FocusTargetWithSmite
         {
-            SelectedEnemyTarget = newTarget;
-            _updateTarget = false;
-        }
-        /// <summary>
-        ///     Disables the Target Override.
-        /// </summary>
-        public void DisableTargetOverride()
-        {
-            _updateTarget = true;
+            get { return _focusTargetWithSmite; }
+            set { _focusTargetWithSmite = value; }
         }
 
         /// <summary>
-        ///     Enables STS.
+        ///     Enables or disables enemy mode menu.
+        ///     For Menu.
         /// </summary>
-        public static void EnableSTS()
+        public static bool EnemyModeMenu
         {
-            _enableSTS = true;
+            get { return _enemyModeMenu; }
+            set { _enemyModeMenu = value; }
         }
 
         /// <summary>
-        ///     Disables STS.
+        ///     Enables or disables damage type menu.
+        ///     For Menu.
         /// </summary>
-        public static void DisableSTS()
+        public static bool DamageTypeMenu
         {
-            _enableSTS = false;
+            get { return _damageTyprMenu; }
+            set { _damageTyprMenu = value; }
         }
 
         /// <summary>
-        ///     Returns or sets current STS monitar range.
+        ///     Enables or disables ally mode menu.
+        ///     For Menu.
         /// </summary>
-        public static float Range
+        public static bool AllyModeMenu
+        {
+            get { return _allyModeMenu; }
+            set { _allyModeMenu = value; }
+        }
+
+        /// <summary>
+        ///     Returns or sets monitor range for the targrt selector.
+        /// </summary>
+        public static float MonitorRange
+        {
+            get { return _monitorRange; }
+            set { _monitorRange = value; }
+        }
+
+        /// <summary>
+        ///     Returns or sets the value for the extended monitor range for the targrt selector.
+        /// </summary>
+        public static int EMR
         {
             get
             {
-                return _range;
+                _extendedMonitorRange = _stsMenu.Item("EMR").GetValue<Slider>().Value;
+                return _extendedMonitorRange;
             }
             set
             {
-                _range = value;
+                _stsMenu.Item("EMR").SetValue(new Slider(value, 0, 500));
+                _extendedMonitorRange = value;
             }
         }
 
-        /// <summary>
-        ///     Returns or sets current STS enemy mode.
-        /// </summary>
+        public static DamageType CurrentDamagetType
+        {
+            get
+            {
+                switch (_stsMenu.Item("DmgType").GetValue<StringList>().SelectedIndex)
+                {
+                    case 0:
+                        _currentDamageType = DamageType.Magical;
+                        break;
+                    case 1:
+                        _currentDamageType = DamageType.Physical;
+                        break;
+                    case 2:
+                        _currentDamageType = DamageType.Hybrid;
+                        break;
+                    case 3:
+                        _currentDamageType = DamageType.True;
+                        break;
+                }
+                return _currentDamageType;
+            }
+            set
+            {
+                _currentDamageType = value;
+
+                switch (value)
+                {
+                    case DamageType.Magical:
+                        _stsMenu.Item("DmgType")
+                            .SetValue(new StringList(new[] { "Magical", "Physical", "Hybrid", "True" }));
+                        break;
+                    case DamageType.Physical:
+                        _stsMenu.Item("DmgType")
+                            .SetValue(new StringList(new[] { "Magical", "Physical", "Hybrid", "True" }, 1));
+                        break;
+                    case DamageType.Hybrid:
+                        _stsMenu.Item("DmgType")
+                            .SetValue(new StringList(new[] { "Magical", "Physical", "Hybrid", "True" }, 2));
+                        break;
+                    case DamageType.True:
+                        _stsMenu.Item("DmgType")
+                            .SetValue(new StringList(new[] { "Magical", "Physical", "Hybrid", "True" }, 3));
+                        break;
+                }
+            }
+        }
+
         public static Mode CurrentEnemyMode
         {
             get
             {
-                return _currentEnemyMode;
+                switch (_stsMenu.Item("TSMode").GetValue<StringList>().SelectedIndex)
+                {
+                    case 0:
+                        _enemyMode = Mode.Auto;
+                        break;
+                    case 1:
+                        _enemyMode = Mode.LowHp;
+                        break;
+                    case 2:
+                        _enemyMode = Mode.Priority;
+                        break;
+                    case 3:
+                        _enemyMode = Mode.MostAd;
+                        break;
+                    case 4:
+                        _enemyMode = Mode.MostAp;
+                        break;
+                    case 5:
+                        _enemyMode = Mode.Closest;
+                        break;
+                    case 6:
+                        _enemyMode = Mode.NearMouse;
+                        break;
+                    case 7:
+                        _enemyMode = Mode.Less;
+                        break;
+                    default:
+                        _enemyMode = Mode.None;
+                        break;
+                }
+                return _enemyMode;
             }
-            set
-            {
-                _currentEnemyMode = value;
-            }
+            set { _enemyMode = value; }
         }
 
-        /// <summary>
-        ///     Returns or sets current STS ally mode.
-        /// </summary>
         public static Mode CurrentAllyMode
         {
             get
             {
-                return _currentAllyMode;
+                switch (_stsAllyMenu.Item("AllyTSMode").GetValue<StringList>().SelectedIndex)
+                {
+                    case 0:
+                        _allyMode = Mode.Auto;
+                        break;
+                    case 1:
+                        _allyMode = Mode.LowHp;
+                        break;
+                    case 2:
+                        _allyMode = Mode.Priority;
+                        break;
+                    case 3:
+                        _allyMode = Mode.MostAd;
+                        break;
+                    case 4:
+                        _allyMode = Mode.MostAp;
+                        break;
+                    case 5:
+                        _allyMode = Mode.Closest;
+                        break;
+                    case 6:
+                        _allyMode = Mode.NearMouse;
+                        break;
+                    case 7:
+                        _allyMode = Mode.Less;
+                        break;
+                    default:
+                        _allyMode = Mode.None;
+                        break;
+                }
+                return _allyMode;
             }
-            set
-            {
-                _currentAllyMode = value;
-            }
+            set { _allyMode = value; }
         }
 
         /// <summary>
-        ///     Cheacks if ther are min number of enemys champs in set Range from the unit.
-        ///     Default unit is player.
+        ///     Returns the current mode for selected team regardles of type of menu (Menu or MenuWrapper) and if mode menus are
+        ///     disabled.
         /// </summary>
-        public bool EnemysinRange(float range, int min = 1, Obj_AI_Base unit = null)
+        public static Mode CurrentMode(Team selectTeam = Team.Enemy)
         {
-            if (unit == null)
-                unit = SL.Self;
-            return min <= AllEnemys.Count(hero => hero.Distance(unit) < range && hero.IsValidTarget());
-        }
-
-        public static Mode GetCurrentEnemyMode()
-        {
-            switch (Config.Item("TSMode").GetValue<StringList>().SelectedIndex)
+            switch (selectTeam)
             {
-                case 0:
-                    return Mode.LowHP;
-                case 1:
-                    return Mode.Priority;
-                case 2:
-                    return Mode.MostAD;
-                case 3:
-                    return Mode.MostAP;
-                case 4:
-                    return Mode.Closest;
-                case 5:
-                    return Mode.NearMouse;
+                case Team.Enemy:
+                    return CurrentEnemyMode;
+
+                case Team.Ally:
+                    return CurrentAllyMode;
+
                 default:
                     return Mode.None;
             }
         }
 
-        private static Mode GetCurrentAllyMode()
+        private static void InitSTS()
         {
-            switch (Config.Item("AllyTSMode").GetValue<StringList>().SelectedIndex)
-            {
-                case 0:
-                    return Mode.LowHP;
-                case 1:
-                    return Mode.Priority;
-                case 2:
-                    return Mode.MostAD;
-                case 3:
-                    return Mode.MostAP;
-                case 4:
-                    return Mode.Closest;
-                case 5:
-                    return Mode.NearMouse;
-                default:
-                    return Mode.None;
-            }
+            Game.OnWndProc += Game_OnWndProc;
         }
 
         /// <summary>
-        ///     Initializes the STS with default values. 
-        ///     If u want to set custom values for force mode, EMR and AllyMenu they should be set before this.
+        ///     Returns Menu for the STS
         /// </summary>
-        public static void InitializeSTS()
+        public static void StsMenu(Menu menu)
         {
-            Game.OnGameUpdate += Game_OnGameUpdate;
-            Drawing.OnDraw += Drawing_OnDraw;
+            _stsMenu = menu;
 
-            Config.Item("TSMode").ValueChanged += TSMode_ValueChanged;
-            Config.Item("AllyTSMode").ValueChanged += AllyTSMode_ValueChanged;
-            Config.Item("FocusMode").ValueChanged += FocusMode_ValueChanged;
-            Config.Item("SmiteMode").ValueChanged += SmiteMode_ValueChanged;
-            Config.Item("EMR").ValueChanged += EMR_ValueChanged;
-            GetEnemyWithSmite();
+            var stsMenu = new Menu("SimpleTargetSelector", "STS");
 
-            TSMode_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
-            AllyTSMode_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
-            FocusMode_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
-            SmiteMode_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
-            EMR_ValueChanged(new object(), new OnValueChangeEventArgs(new object(), new object()));
-        }
+            var menuEnemyPriorety = new Menu("Enemy Priorety", "Priorety");
 
-        public static Menu STSMenu
-        {
-            get
+            if (EnemyModeMenu)
             {
-                var menu = new Menu("Simple Target Selector", "STS");
+                menuEnemyPriorety.AddItem(
+                    new MenuItem("TSMode", "Target Selector Mode:").SetValue(
+                        new StringList(
+                            new[]
+                            { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" })));
+            }
 
-                var menuEnemyPriorety = new Menu("Enemy Priorety", "Priorety");
-
-                menuEnemyPriorety.AddItem(new MenuItem("TSMode", "Target Selector Mode:").SetValue(new StringList(new[] { "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse" })));
-
+            if (!AllEnemys.Any())
+            {
+                menuEnemyPriorety.AddItem(new MenuItem("No Enemys", "No Enemys"));
+            }
+            else
+            {
                 foreach (var enemy in AllEnemys)
                 {
-                    menuEnemyPriorety.AddItem(new MenuItem(enemy.BaseSkinName, enemy.BaseSkinName)).SetValue(new Slider(GetAutoPriorety(enemy.BaseSkinName), 5, 0));
+                    menuEnemyPriorety.AddItem(new MenuItem(enemy.ChampionName, enemy.ChampionName))
+                        .SetValue(new Slider(GetAutoPriorety(enemy.ChampionName), 1, 5));
                 }
-
-                menu.AddSubMenu(menuEnemyPriorety);
-
-                if (_enableAllyMenu) menu.AddSubMenu(AllyMenu);
-
-                if (_enableEMR)
-                {
-                    menu.AddItem(new MenuItem("EMR", "Extend Monitar Range").SetValue(new Slider(_extendMonitarRange, 0, 1000)));
-                }
-                menu.AddItem(new MenuItem("FocusMode", "Focus Selected Target")).SetValue<bool>(_forceMode);
-                menu.AddItem(new MenuItem("SmiteMode", "Focus Target With Smite")).SetValue<bool>(_smiteTarget);
-
-                Config = menu;
-                return menu;
             }
+
+            stsMenu.AddSubMenu(menuEnemyPriorety);
+
+            if (EnableAllyMenu)
+            {
+                StsAllyMenu(stsMenu);
+            }
+
+            if (EnableEMR)
+            {
+                stsMenu.AddItem(
+                    new MenuItem("EMR", "Extend Monitar Range").SetValue(new Slider(_extendedMonitorRange, 0, 1000)));
+            }
+            stsMenu.AddItem(new MenuItem("FocusMode", "Focus Selected Target").SetValue(FocusSelectedTarget));
+            stsMenu.AddItem(new MenuItem("SmiteMode", "Focus Target With Smite").SetValue(FocusTargetWithSmite));
+
+            stsMenu.AddItem(
+                new MenuItem("DmgType", "Damage Type:").SetValue(
+                    new StringList(new[] { "Magical", "Physical", "Hybrid", "True" })));
+
+            _stsMenu.AddSubMenu(stsMenu);
+
+            InitSTS();
         }
 
-        /// <summary>
-        ///     Returns STS menu for allys. It can be used outside STS but it has to be disabled in the main STS menu EnableAllyMenu(bool)
-        /// </summary>
-        public static Menu AllyMenu
+        public static void StsAllyMenu(Menu menu)
         {
-            get
+            _stsAllyMenu = menu;
+
+            var stsmenu = new Menu("Ally Priorety", "AllySTS");
+
+            if (AllyModeMenu)
             {
-                var menuAllyPriorety = new Menu("Ally Priorety", "AllySTS");
-
-                menuAllyPriorety.AddItem(new MenuItem("AllyTSMode", "Target Selector Mode:").SetValue(new StringList(new[] { "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse" })));
-
+                stsmenu.AddItem(
+                    new MenuItem("AllyTSMode", "Target Selector Mode:").SetValue(
+                        new StringList(
+                            new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse" })));
+            }
+            if (!AllAllys.Any())
+            {
+                stsmenu.AddItem(new MenuItem("No Allys", "No Allys"));
+            }
+            else
+            {
                 foreach (var ally in AllAllys)
                 {
-                    menuAllyPriorety.AddItem(new MenuItem(ally.BaseSkinName, ally.BaseSkinName)).SetValue(new Slider(GetAutoPriorety(ally.BaseSkinName), 5, 0));
+                    stsmenu.AddItem(new MenuItem(ally.ChampionName, ally.ChampionName))
+                        .SetValue(new Slider(GetAutoPriorety(ally.ChampionName), 1, 5));
                 }
-                return menuAllyPriorety;
             }
-        }
 
-        private static void SmiteMode_ValueChanged(object sender, OnValueChangeEventArgs e)
-        {
-            _smiteTarget = Config.Item("SmiteMode").GetValue<bool>();
-        }
-
-        private static void FocusMode_ValueChanged(object sender, OnValueChangeEventArgs e)
-        {
-            _focusTarget = Config.Item("FocusMode").GetValue<bool>();
-        }
-
-        private static void TSMode_ValueChanged(object sender, OnValueChangeEventArgs e)
-        {
-            SelectedEnemyTarget = null;
-            _currentEnemyMode = GetCurrentEnemyMode();
-        }
-
-        private static void AllyTSMode_ValueChanged(object sender, OnValueChangeEventArgs e)
-        {
-            _currentAllyMode = GetCurrentAllyMode();
-        }
-
-        private static void EMR_ValueChanged(object sender, OnValueChangeEventArgs e)
-        {
-            _extendMonitarRange = Config.Item("EMR").GetValue<Slider>().Value;
+            _stsAllyMenu.AddSubMenu(stsmenu);
         }
 
         /// <summary>
         ///     Returns the auto priorety.
         /// </summary>
-        public static int GetAutoPriorety(string ChampName)
+        public static int GetAutoPriorety(string champName)
         {
-            if (ADCarry.Contains(ChampName)) return 5;
-            if (APCarry.Contains(ChampName)) return 4;
-            if (Bruiser.Contains(ChampName)) return 3;
-            if (Support.Contains(ChampName)) return 2;
-            if (Tank.Contains(ChampName)) return 1;
-            return 0;
+            if (AdCarry.Contains(champName))
+            {
+                return 5;
+            }
+            if (ApCarry.Contains(champName))
+            {
+                return 4;
+            }
+            if (Bruiser.Contains(champName))
+            {
+                return 3;
+            }
+            if (Support.Contains(champName))
+            {
+                return 2;
+            }
+            if (Tank.Contains(champName))
+            {
+                return 1;
+            }
+            return 1;
         }
 
         /// <summary>
-        ///     Returns the current priorety set by the slider.
+        ///     Returns the current priorety for the champ set by the slider regardles of menu type (Menu or MenuWrapper)
         /// </summary>
-        public static int GetPriorety(string ChampName)
+        public static int GetPriorety(string champName, Team setTeam = Team.Enemy)
         {
-            return Config.Item(ChampName).GetValue<Slider>().Value;
+            if (champName == "")
+            {
+                return 1;
+            }
+
+            switch (setTeam)
+            {
+                case Team.Enemy:
+                    return _stsMenu.Item(champName).GetValue<Slider>().Value;
+                case Team.Ally:
+                    return _stsAllyMenu.Item(champName).GetValue<Slider>().Value;
+            }
+            return 1;
         }
 
+        /// <summary>
+        ///     Overrides the current selecterd target with newTarget.
+        ///     Override also disables searching for new targets.
+        ///     To enable it again use DisableOverrideTarget.
+        /// </summary>
+        public static void OverrideTarget(Obj_AI_Hero newTarget)
+        {
+            if (newTarget == null)
+            {
+                return;
+            }
+
+            _focusedTarget = newTarget;
+            _enemySearch = false;
+        }
+
+        /// <summary>
+        ///     Disables override target.
+        /// </summary>
+        public static void DisableOverrideTarget()
+        {
+            _enemySearch = true;
+        }
+
+        /// <summary>
+        ///     Cheacks if the target is invulnerable.
+        /// </summary>
         public static bool IsInvulnerable(Obj_AI_Base target)
         {
-            if (target.HasBuff("Undying Rage") && target.Health >= 2f)
+            if (target.HasBuff("Undying Rage"))
             {
                 return true;
             }
+
             if (target.HasBuff("JudicatorIntervention"))
             {
                 return true;
             }
 
-            //if (!AllEnemys.Any(hero => hero.BaseSkinName.Contains("yasuo") && hero.IsEnemy))
-            //{
-            //    return false;
-            //}
-
             return false;
         }
 
         /// <summary>
-        ///     Comperes T1 and T2 to determin which has lowest current HP and returns it.
-        ///     If they have the same then it goes to ComperePriorety();
+        ///     Checks for collision with yasuo wind wall.
         /// </summary>
-        public static Obj_AI_Hero CompereHealth(Obj_AI_Hero target_1, Obj_AI_Hero target_2)
+        public static bool CheckYasuoWall(AttackableUnit target, float selectedRange)
         {
-            if (target_1.Health < target_2.Health) return target_1;
-
-            if (target_1.Health == target_2.Health)
+            if (!AllEnemys.Any(enemy => enemy.ChampionName.ToLower().Contains("yasuo") && !enemy.IsValidTarget(selectedRange)))
             {
-                return ComperePriorety(target_1, target_2);
+                return false;
             }
-            return target_2;
+
+            return SimpleCollision.YasuoWallCollision(selectedRange, target);
+        }
+
+        private static void Game_OnWndProc(WndEventArgs args)
+        {
+            if (args.Msg != (uint) WindowsMessages.WM_LBUTTONDOWN)
+            {
+                return;
+            }
+
+            var temp = Hud.SelectedUnit;
+
+            if (temp != null && temp.Type == GameObjectType.obj_AI_Hero && ((Obj_AI_Hero) temp).IsEnemy &&
+                ((Obj_AI_Base) temp).IsValidTarget())
+            {
+                _focusedTarget = (Obj_AI_Hero) temp;
+                return;
+            }
+            _focusedTarget = null;
+        }
+
+        private static void FocusedTargetWithSmite()
+        {
+            foreach (var enemy in
+                AllEnemys.Where(
+                    enemy =>
+                        enemy.Spellbook.GetSpell(SpellSlot.Summoner1).Name.ToLower().Contains("smite") ||
+                        enemy.Spellbook.GetSpell(SpellSlot.Summoner2).Name.ToLower().Contains("smite")))
+            {
+                _focusedTargetWithSmite = enemy;
+            }
         }
 
         /// <summary>
-        ///     Comperes T1 and T2 to determin which has highest current priorety and returns it.
-        ///     If they have the same then it goes to CompereHealth();
-        /// </summary>
-        public static Obj_AI_Hero ComperePriorety(Obj_AI_Hero target_1, Obj_AI_Hero target_2)
-        {
-            if (GetPriorety(target_1.BaseSkinName) < GetPriorety(target_2.BaseSkinName)) return target_2;
-
-            if (GetPriorety(target_1.BaseSkinName) == GetPriorety(target_2.BaseSkinName))
-            {
-                return CompereHealth(target_1, target_2);
-            }
-            return target_1;
-        }
-
-        /// <summary>
-        ///     Comperes T1 and T2 to determin which has highest auto priorety and returns it.
-        ///     If they have the same then it goes to CompereHealth();
-        /// </summary>
-        public static Obj_AI_Hero CompereAutoPriorety(Obj_AI_Hero target_1, Obj_AI_Hero target_2)
-        {
-            if (GetAutoPriorety(target_1.BaseSkinName) < GetAutoPriorety(target_2.BaseSkinName)) return target_2;
-
-            if (GetAutoPriorety(target_1.BaseSkinName) == GetAutoPriorety(target_2.BaseSkinName))
-            {
-                return CompereHealth(target_1, target_2);
-            }
-            return target_1;
-        }
-
-        /// <summary>
-        ///     Comperes T1 and T2 to determin which has more AP and returns it.  
-        ///     Compare includes both BaseAbilityDamage and flat FlatMagicDamageMod.
-        ///     If they have the same then it goes to CompereHealth();
-        /// </summary>
-        public static Obj_AI_Hero CompereAP(Obj_AI_Hero target_1, Obj_AI_Hero target_2)
-        {
-            if (target_1.FlatMagicDamageMod + target_1.BaseAbilityDamage < target_2.FlatMagicDamageMod + target_2.BaseAbilityDamage) return target_2;
-
-            if (target_1.FlatMagicDamageMod + target_1.BaseAbilityDamage == target_2.FlatMagicDamageMod + target_2.BaseAbilityDamage)
-            {
-                return CompereHealth(target_1, target_2);
-            }
-            return target_1;
-        }
-
-        /// <summary>
-        ///     Comperes T1 and T2 to determin which has more AD and returns it.  
-        ///     Compare includes both BaseAttackDamage and flat FlatPhysicalDamageMod.
-        ///     If they have the same then it goes to CompereHealth();
-        /// </summary>
-        public static Obj_AI_Hero CompereAD(Obj_AI_Hero target_1, Obj_AI_Hero target_2)
-        {
-            if (target_1.BaseAttackDamage + target_1.FlatPhysicalDamageMod < target_2.BaseAttackDamage + target_2.FlatPhysicalDamageMod) return target_2;
-
-            if (target_1.BaseAttackDamage + target_1.FlatPhysicalDamageMod == target_2.BaseAttackDamage + target_2.FlatPhysicalDamageMod)
-            {
-                return CompereHealth(target_1, target_2);
-            }
-            return target_1;
-        }
-
-        /// <summary>
-        ///     Comperes T1 and T2 to determin closest to the current players position and returns it.  
-        ///     If they have the same then it goes to CompereHealth();
-        /// </summary>
-        public static Obj_AI_Hero CompereClosest(Obj_AI_Hero target_1, Obj_AI_Hero target_2)
-        {
-            if (Geometry.Distance(target_1, SL.Self) > Geometry.Distance(target_2, SL.Self)) return target_2;
-
-            if (Geometry.Distance(target_1, SL.Self) == Geometry.Distance(target_2, SL.Self))
-            {
-                return CompereHealth(target_1, target_2);
-            }
-            return target_1;
-        }
-
-        /// <summary>
-        ///     Comperes T1 and T2 to determin nearest to the current currsor position and returns it. 
-        ///     If they have the same then it goes to CompereHealth();
-        /// </summary>
-        public static Obj_AI_Hero CompereNearMouse(Obj_AI_Hero target_1, Obj_AI_Hero target_2)
-        {
-            if (Geometry.Distance(target_1, Game.CursorPos) > Geometry.Distance(target_2, Game.CursorPos)) return target_2;
-
-            if (Geometry.Distance(target_1, Game.CursorPos) == Geometry.Distance(target_2, Game.CursorPos))
-            {
-                return CompereHealth(target_1, target_2);
-            }
-            return target_1;
-        }
-
-        /// <summary>
-        ///     Return the enemy with lowest current HP in specified Range and extendMonitarRange.
-        /// </summary>
-        public static Obj_AI_Hero GetLowHPEnemy(float aaRange, float extendMonitarRange = 0)
-        {
-            Obj_AI_Hero newTarget = null;
-
-            foreach (var target in AllEnemys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
-            {
-                if (newTarget == null) newTarget = target;
-                else
-                {
-                    if (IsInvulnerable(CompereHealth(target, newTarget))) continue;
-                    else newTarget = CompereHealth(target, newTarget);
-                }
-            }
-            return newTarget;
-        }
-
-        /// <summary>
-        ///     Return the enemy with highest current priorety in specified Range and extendMonitarRange.
-        /// </summary>
-        public static Obj_AI_Hero GetPrioretyEnemy(float aaRange, float extendMonitarRange = 0)
-        {
-            Obj_AI_Hero newTarget = null;
-
-            foreach (var target in AllEnemys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
-            {
-                if (newTarget == null) newTarget = target;
-                else
-                {
-                    if (IsInvulnerable(ComperePriorety(target, newTarget))) continue;
-                    else newTarget = ComperePriorety(target, newTarget);
-                }
-            }
-            return newTarget;
-        }
-
-        /// <summary>
-        ///     Return the enemy with most AP in specified Range and extendMonitarRange.
-        /// </summary>
-        public static Obj_AI_Hero GetMostAPEnemy(float aaRange, float extendMonitarRange = 0)
-        {
-            Obj_AI_Hero newTarget = null;
-
-            foreach (var target in AllEnemys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
-            {
-                if (newTarget == null) newTarget = target;
-                else
-                {
-                    if (IsInvulnerable(CompereAP(target, newTarget))) continue;
-                    else newTarget = CompereAP(target, newTarget);
-                }
-            }
-            return newTarget;
-        }
-
-        /// <summary>
-        ///     Return the enemy with most AD in specified Range and extendMonitarRange.
-        /// </summary>
-        public static Obj_AI_Hero GetMostADEnemy(float aaRange, float extendMonitarRange = 0)
-        {
-            Obj_AI_Hero newTarget = null;
-
-            foreach (var target in AllEnemys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
-            {
-                if (newTarget == null) newTarget = target;
-                else
-                {
-                    if (IsInvulnerable(CompereAD(target, newTarget))) continue;
-                    else newTarget = CompereAD(target, newTarget);
-                }
-            }
-            return newTarget;
-        }
-
-        /// <summary>
-        ///     Return the closest enemy from current players positon in specified Range and extendMonitarRange. 
-        /// </summary>
-        public static Obj_AI_Hero GetClosestEnemy(float aaRange, float extendMonitarRange = 0)
-        {
-            Obj_AI_Hero newTarget = null;
-            foreach (var target in AllEnemys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
-            {
-                if (newTarget == null) newTarget = target;
-                else
-                {
-                    if (IsInvulnerable(CompereClosest(target, newTarget))) continue;
-                    else newTarget = CompereClosest(target, newTarget);
-                }
-            }
-            return newTarget;
-        }
-
-        /// <summary>
-        ///     Return the enemy nearest to the current cursor position in specified Range and extendMonitarRange.
-        /// </summary>
-        public static Obj_AI_Hero GetNearMouseEnemy(float aaRange, float extendMonitarRange = 0)
-        {
-            Obj_AI_Hero newTarget = null;
-            foreach (var target in AllEnemys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
-            {
-                if (newTarget == null) newTarget = target;
-                else newTarget = CompereNearMouse(target, newTarget);
-            }
-            return newTarget;
-        }
-
-        /// <summary>
-        ///     Return the ally with lowest current HP in specified Range and extendMonitarRange.
-        /// </summary>
-        public static Obj_AI_Hero GetLowHPAlly(float aaRange, float extendMonitarRange = 0)
-        {
-            Obj_AI_Hero newTarget = null;
-
-            foreach (var target in AllAllys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
-            {
-                if (newTarget == null) newTarget = target;
-                else newTarget = CompereHealth(target, newTarget);
-            }
-            return newTarget;
-        }
-
-        /// <summary>
-        ///     Return the ally with highest current priorety in specified Range and extendMonitarRange.
-        /// </summary>
-        public static Obj_AI_Hero GetPrioretyAlly(float aaRange, float extendMonitarRange = 0)
-        {
-            Obj_AI_Hero newTarget = null;
-
-            foreach (var target in AllAllys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
-            {
-                if (newTarget == null) newTarget = target;
-                else newTarget = ComperePriorety(target, newTarget);
-            }
-            return newTarget;
-        }
-
-        /// <summary>
-        ///     Return the ally with most AP in specified Range and extendMonitarRange.
-        /// </summary>
-        public static Obj_AI_Hero GetMostAPAlly(float aaRange, float extendMonitarRange = 0)
-        {
-            Obj_AI_Hero newTarget = null;
-
-            foreach (var target in AllAllys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
-            {
-                if (newTarget == null) newTarget = target;
-                else newTarget = CompereAP(target, newTarget);
-            }
-            return newTarget;
-        }
-
-        /// <summary>
-        ///     Return the ally with most AD in specified Range and extendMonitarRange.
-        /// </summary>
-        public static Obj_AI_Hero GetMostADAlly(float aaRange, float extendMonitarRange = 0)
-        {
-            Obj_AI_Hero newTarget = null;
-
-            foreach (var target in AllAllys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
-            {
-                if (newTarget == null) newTarget = target;
-                else newTarget = CompereAD(target, newTarget);
-            }
-            return newTarget;
-        }
-
-        /// <summary>
-        ///     Return the closest ally from current players positon in specified Range and extendMonitarRange. 
-        /// </summary>
-        public static Obj_AI_Hero GetClosestAlly(float aaRange, float extendMonitarRange = 0)
-        {
-            Obj_AI_Hero newTarget = null;
-            foreach (var target in AllAllys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
-            {
-                if (newTarget == null) newTarget = target;
-                else newTarget = CompereClosest(target, newTarget);
-            }
-            return newTarget;
-        }
-
-        /// <summary>
-        ///     Return the ally nearest to the current cursor position in specified Range and extendMonitarRange.
-        /// </summary>
-        public static Obj_AI_Hero GetNearMouseAlly(float aaRange, float extendMonitarRange = 0)
-        {
-            Obj_AI_Hero newTarget = null;
-            foreach (var target in AllAllys.Where(target => target.IsValidTarget(aaRange + extendMonitarRange)))
-            {
-                if (newTarget == null) newTarget = target;
-                else newTarget = CompereNearMouse(target, newTarget);
-            }
-            return newTarget;
-        }
-
-        /// <summary>
-        ///     Returns List<Obj_AI_Hero> of allys with smite.
-        /// </summary>
-        public static List<Obj_AI_Hero> GetAllysWithSmite()
-        {
-            List<Obj_AI_Hero> SmiteAllys = new List<Obj_AI_Hero>();
-            foreach (Obj_AI_Hero ally in AllAllys.Where
-                (ally => ally.SummonerSpellbook.GetSpell(SpellSlot.Summoner1).Name.Contains("smite") ||
-                    ally.Spellbook.GetSpell(SpellSlot.Summoner2).Name.Contains("smite")))
-            {
-                SmiteAllys.Add(ally);
-            }
-            return SmiteAllys;
-        }
-
-        /// <summary>
-        ///     Returns List<Obj_AI_Hero> of enemys with smite.
-        /// </summary>
-        public static List<Obj_AI_Hero> GetEnemysWithSmite()
-        {
-            List<Obj_AI_Hero> SmiteEnemys = new List<Obj_AI_Hero>();
-            foreach (Obj_AI_Hero enemy in AllEnemys.Where
-                (enemy => enemy.SummonerSpellbook.GetSpell(SpellSlot.Summoner1).Name.Contains("smite") ||
-                    enemy.Spellbook.GetSpell(SpellSlot.Summoner2).Name.Contains("smite")))
-            {
-                SmiteEnemys.Add(enemy);
-            }
-            return SmiteEnemys;
-        }
-
-        /// <summary>
-        ///     Returns List<Obj_AI_Hero> of enemys with specified Summoner Spell.
+        ///     Returns List(Obj_AI_Hero) of enemys with specified Summoner Spell.
         ///     For check it uses Contains so you can use "smite" for "SummonerSmite" and it will return correctly.
         /// </summary>
-        public static List<Obj_AI_Hero> GetEnemysSummenerSpell(string SummonerSpellName)
+        public static List<Obj_AI_Hero> GetEnemysWithSummenerSpell(string summonerSpellName)
         {
-            List<Obj_AI_Hero> SmiteEnemys = new List<Obj_AI_Hero>();
-            foreach (Obj_AI_Hero enemy in AllEnemys.Where
-                (enemy => enemy.SummonerSpellbook.GetSpell(SpellSlot.Summoner1).Name.Contains(SummonerSpellName) ||
-                    enemy.Spellbook.GetSpell(SpellSlot.Summoner2).Name.Contains(SummonerSpellName)))
-            {
-                SmiteEnemys.Add(enemy);
-            }
-            return SmiteEnemys;
+            return
+                AllEnemys.Where(
+                    enemy =>
+                        enemy.Spellbook.GetSpell(SpellSlot.Summoner1)
+                            .Name.ToLower()
+                            .Contains(summonerSpellName.ToLower()) ||
+                        enemy.Spellbook.GetSpell(SpellSlot.Summoner2)
+                            .Name.ToLower()
+                            .Contains(summonerSpellName.ToLower())).ToList();
         }
 
         /// <summary>
         ///     Return enemy turret from current players positon in specified Range and extendMonitarRange.
         /// </summary>
-        public static Obj_AI_Base GetTurret(float aaRange, float extendMonitarRange = 0)
+        public static Obj_AI_Turret GetTurret(float range)
         {
-            foreach (var turret in ObjectManager.Get<Obj_AI_Turret>().Where(turret => turret.IsValidTarget(aaRange + extendMonitarRange) && turret.IsEnemy))
+            foreach (var turret in
+                ObjectManager.Get<Obj_AI_Turret>().Where(turret => turret.IsValidTarget(range) && turret.IsEnemy))
             {
                 return turret;
             }
@@ -721,291 +590,413 @@ namespace SimpleLib
         /// <summary>
         ///     Return enemy inhib or nexus from current players positon in specified Range and extendMonitarRange.
         /// </summary>
-        public static Obj_Building GetInhibitorsNexus(float aaRange, float extendMonitarRange = 0)
+        public static Obj_Building GetInhibitorsNexus(float range)
         {
-            foreach (var building in ObjectManager.Get<Obj_Building>().Where(building => (building.Name.Contains("Barracks_") || building.Name.Contains("HQ_")) &&
-                building.IsEnemy && !building.IsInvulnerable && (Vector2.Distance(building.Position.To2D(), SL.Self.Position.To2D()) <= aaRange + extendMonitarRange)))
+            foreach (var inhib in
+                ObjectManager.Get<Obj_Barracks>().Where(turret => turret.IsValidTarget(range) && turret.IsEnemy))
             {
-                return building;
+                return inhib;
             }
+
+            foreach (
+                var nexus in ObjectManager.Get<Obj_HQ>().Where(turret => turret.IsValidTarget(range) && turret.IsEnemy))
+            {
+                return nexus;
+            }
+
             return null;
         }
 
-        private static void GetEnemyWithSmite()
+        /// <summary>
+        ///     Returns target with menu params.
+        /// </summary>
+        public static Obj_AI_Hero GetTarget(Team selectTeam)
         {
-            foreach (var enemy in AllEnemys.Where
-                (enemy => enemy.SummonerSpellbook.GetSpell(SpellSlot.Summoner1).Name.Contains("smite") ||
-                    enemy.Spellbook.GetSpell(SpellSlot.Summoner2).Name.Contains("smite")))
-            {
-                _focustEnemySmiteTarget.Add(enemy);
-            }
+            var mode = CurrentMode(selectTeam);
+            return GetTarget(MonitorRange + EMR, mode, CurrentDamagetType, selectTeam);
         }
 
-        public static Obj_AI_Hero GetFocustTarger(float aaRange, float extendMonitarRange = 0)
+        /// <summary>
+        ///     Returns target for set params and menu params.
+        /// </summary>
+        public static Obj_AI_Hero GetTarget(float selectRange, Team selectTeam)
         {
-            if (Hud.SelectedUnit != null)
+            var mode = CurrentMode(selectTeam);
+            return GetTarget(selectRange, mode, CurrentDamagetType, selectTeam);
+        }
+
+        /// <summary>
+        ///     Returns target for set params and menu params.
+        /// </summary>
+        public static Obj_AI_Hero GetTarget(float selectRange, DamageType selectDamageType, Team selectTeam)
+        {
+            var mode = CurrentMode(selectTeam);
+            return GetTarget(selectRange, mode, selectDamageType, selectTeam);
+        }
+
+        /// <summary>
+        ///     Returns target for set params.
+        /// </summary>
+        public static Obj_AI_Hero GetTarget(float selectRange,
+            Mode selectMode,
+            DamageType selectDamageType,
+            Team selectTeam = Team.Enemy)
+        {
+            if (selectTeam == Team.Enemy && !_enemySearch)
             {
-                if (Hud.SelectedUnit.Type == GameObjectType.obj_AI_Hero
-                    && ((Obj_AI_Base)Hud.SelectedUnit).IsEnemy
-                        && ((Obj_AI_Base)Hud.SelectedUnit).IsValidTarget(aaRange + extendMonitarRange))
+                return _enemyTarget;
+            }
+
+            switch (selectTeam)
+            {
+                case Team.Enemy:
                 {
-                    return _focustTarget = (Obj_AI_Hero)Hud.SelectedUnit;
+                    if (_focusedTarget != null && _focusedTarget.IsValidTarget(selectRange) &&
+                        !CheckYasuoWall(_focusedTarget, selectRange))
+                    {
+                        _enemyTarget = _focusedTarget;
+                        return _enemyTarget;
+                    }
+
+                    if (FocusTargetWithSmite && _focusedTargetWithSmite != null &&
+                        _focusedTargetWithSmite.IsValidTarget(selectRange) &&
+                        !CheckYasuoWall(_focusedTargetWithSmite, selectRange))
+                    {
+                        _enemyTarget = _focusedTargetWithSmite;
+                        return _enemyTarget;
+                    }
+                    return GetEnemyTarget(selectRange, selectDamageType, selectMode);
+                }
+                case Team.Ally:
+                {
+                    return GetAllyTarget(selectRange, selectDamageType, selectMode);
                 }
             }
             return null;
         }
 
-        /// <summary>
-        ///     Searches for the target with current enemy settings and sets it as SelectedEnemyTarget.
-        /// </summary>
-        public static void SearchForEnemyTarget()
+        private static Obj_AI_Hero GetEnemyTarget(float selectRange, DamageType selectDamageType, Mode selectMode)
         {
-            if (GetFocustTarger(_range, _extendMonitarRange) != null)
-            {
-                SelectedEnemyTarget = GetFocustTarger(_range, _extendMonitarRange);
-                return;
-            }
+            Obj_AI_Hero currentTarget = null;
+            var currentRatio = 0f;
+            var currentPredictedDmg = 0f;
+            var tempPredictedDmg = 0f;
+            float ratio;
 
-            if (_smiteTarget == true && _focustEnemySmiteTarget.Count != 0)
+            foreach (var enemy in AllEnemys)
             {
-                SelectedEnemyTarget = _focustEnemySmiteTarget.First<Obj_AI_Hero>();
-                return;
-            }
+                if (!enemy.IsValidTarget() || IsInvulnerable(enemy) || CheckYasuoWall(enemy, selectRange) ||
+                    !(Player.Distance(enemy) < selectRange))
+                {
+                    continue;
+                }
 
-            switch (GetCurrentEnemyMode())
-            {
-                case Mode.LowHP:
-                    SelectedEnemyTarget = GetLowHPEnemy(_range, _extendMonitarRange);
-                    return;
-                case Mode.Priority:
-                    SelectedEnemyTarget = GetPrioretyEnemy(_range, _extendMonitarRange);
-                    return;
-                case Mode.MostAP:
-                    SelectedEnemyTarget = GetMostAPEnemy(_range, _extendMonitarRange);
-                    return;
-                case Mode.MostAD:
-                    SelectedEnemyTarget = GetMostADEnemy(_range, _extendMonitarRange);
-                    return;
-                case Mode.Closest:
-                    SelectedEnemyTarget = GetClosestEnemy(_range, _extendMonitarRange);
-                    return;
-                case Mode.NearMouse:
-                    SelectedEnemyTarget = GetNearMouseEnemy(_range, _extendMonitarRange);
-                    return;
-                default:
-                    return;
+                if (currentTarget == null)
+                {
+                    currentTarget = enemy;
+
+                    switch (selectDamageType)
+                    {
+                        case DamageType.Magical:
+                            currentPredictedDmg =
+                                (float) Player.CalcDamage(currentTarget, Damage.DamageType.Magical, 100);
+                            break;
+                        case DamageType.Physical:
+                            currentPredictedDmg =
+                                (float) Player.CalcDamage(currentTarget, Damage.DamageType.Physical, 100);
+                            break;
+                        case DamageType.Hybrid:
+                            currentPredictedDmg =
+                                (float) Player.CalcDamage(currentTarget, Damage.DamageType.Magical, 50) +
+                                (float) Player.CalcDamage(currentTarget, Damage.DamageType.Physical, 50);
+                            break;
+                        case DamageType.True:
+                            currentPredictedDmg = 100;
+                            break;
+                    }
+
+                    currentRatio = currentPredictedDmg / (1 + enemy.Health) * GetPriorety(enemy.ChampionName);
+
+                    continue;
+                }
+
+                switch (selectDamageType)
+                {
+                    case DamageType.Magical:
+                        tempPredictedDmg = (float) Player.CalcDamage(enemy, Damage.DamageType.Magical, 100);
+                        break;
+                    case DamageType.Physical:
+                        tempPredictedDmg = (float) Player.CalcDamage(enemy, Damage.DamageType.Physical, 100);
+                        break;
+                    case DamageType.Hybrid:
+                        tempPredictedDmg = (float) Player.CalcDamage(enemy, Damage.DamageType.Magical, 50) +
+                                           (float) Player.CalcDamage(enemy, Damage.DamageType.Physical, 50);
+                        break;
+                    case DamageType.True:
+                        tempPredictedDmg = 100;
+                        break;
+                }
+
+                switch (selectMode)
+                {
+                    case Mode.Auto:
+
+                        ratio = tempPredictedDmg / (1 + enemy.Health) * GetPriorety(enemy.ChampionName);
+
+                        if (currentRatio < ratio)
+                        {
+                            currentRatio = ratio;
+                            currentTarget = enemy;
+                        }
+                        break;
+
+                    case Mode.LowHp:
+
+                        if (enemy.Health < currentTarget.Health)
+                        {
+                            currentTarget = enemy;
+                        }
+                        else if (Math.Abs(enemy.Health - currentTarget.Health) < float.Epsilon)
+                        {
+                            ratio = tempPredictedDmg / (1 + enemy.Health) * GetPriorety(enemy.ChampionName);
+
+                            if (currentRatio < ratio)
+                            {
+                                currentRatio = ratio;
+                                currentTarget = enemy;
+                            }
+                        }
+                        break;
+
+                    case Mode.Priority:
+
+                        if (GetPriorety(currentTarget.ChampionName) < GetPriorety(enemy.ChampionName))
+                        {
+                            currentTarget = enemy;
+                        }
+                        else if (GetPriorety(currentTarget.ChampionName) == GetPriorety(enemy.ChampionName))
+                        {
+                            ratio = tempPredictedDmg / (1 + enemy.Health) * GetPriorety(enemy.ChampionName);
+
+                            if (currentRatio < ratio)
+                            {
+                                currentRatio = ratio;
+                                currentTarget = enemy;
+                            }
+                        }
+                        break;
+
+                    case Mode.MostAp:
+
+                        if (currentTarget.FlatMagicDamageMod + currentTarget.BaseAbilityDamage <
+                            enemy.FlatMagicDamageMod + enemy.BaseAbilityDamage)
+                        {
+                            currentTarget = enemy;
+                        }
+                        else if (
+                            Math.Abs(
+                                currentTarget.FlatMagicDamageMod + currentTarget.BaseAbilityDamage -
+                                (enemy.FlatMagicDamageMod + enemy.BaseAbilityDamage)) < float.Epsilon)
+                        {
+                            ratio = tempPredictedDmg / (1 + enemy.Health) * GetPriorety(enemy.ChampionName);
+
+                            if (currentRatio < ratio)
+                            {
+                                currentRatio = ratio;
+                                currentTarget = enemy;
+                            }
+                        }
+                        break;
+
+                    case Mode.MostAd:
+
+                        if (currentTarget.BaseAttackDamage + currentTarget.FlatPhysicalDamageMod <
+                            enemy.BaseAttackDamage + enemy.FlatPhysicalDamageMod)
+                        {
+                            currentTarget = enemy;
+                        }
+                        else if (
+                            Math.Abs(
+                                currentTarget.BaseAttackDamage + currentTarget.FlatPhysicalDamageMod -
+                                (enemy.BaseAttackDamage + enemy.FlatPhysicalDamageMod)) < float.Epsilon)
+                        {
+                            ratio = tempPredictedDmg / (1 + enemy.Health) * GetPriorety(enemy.ChampionName);
+
+                            if (currentRatio < ratio)
+                            {
+                                currentRatio = ratio;
+                                currentTarget = enemy;
+                            }
+                        }
+                        break;
+
+                    case Mode.Closest:
+
+                        if (Player.Distance(currentTarget) > Player.Distance(enemy))
+                        {
+                            currentTarget = enemy;
+                        }
+                        break;
+
+                    case Mode.NearMouse:
+
+                        if (currentTarget.Distance(Game.CursorPos) > enemy.Distance(Game.CursorPos))
+                        {
+                            currentTarget = enemy;
+                        }
+                        break;
+
+                    case Mode.Less:
+
+                        if ((enemy.Health - tempPredictedDmg < (currentTarget.Health - currentPredictedDmg)))
+                        {
+                            currentTarget = enemy;
+                            currentPredictedDmg = tempPredictedDmg;
+                        }
+
+                        break;
+                }
             }
+            _enemyTarget = currentTarget;
+            return _enemyTarget;
         }
 
-        /// <summary>
-        ///     Searches for the enemy target with setMode, range and extend monitar range. 
-        ///     Then returns it.
-        /// </summary>
-        public static Obj_AI_Hero SearchForEnemyTarget(Mode setMode)
+        private static Obj_AI_Hero GetAllyTarget(float selectRange, DamageType selectDamageType, Mode selectMode)
         {
-            switch (setMode)
             {
-                case Mode.LowHP:
-                    return GetLowHPEnemy(_range, _extendMonitarRange);
-                case Mode.Priority:
-                    return GetPrioretyEnemy(_range, _extendMonitarRange);
-                case Mode.MostAP:
-                    return GetMostAPEnemy(_range, _extendMonitarRange);
-                case Mode.MostAD:
-                    return GetMostADEnemy(_range, _extendMonitarRange);
-                case Mode.Closest:
-                    return GetClosestEnemy(_range, _extendMonitarRange);
-                case Mode.NearMouse:
-                    return GetNearMouseEnemy(_range, _extendMonitarRange);
-                default:
-                    return null;
+                Obj_AI_Hero currentTarget = null;
+                var currentRatio = 0f;
+                float ratio;
+
+                foreach (var ally in AllAllys)
+                {
+                    if (!ally.IsValidTarget() || !(Player.Distance(ally) <= selectRange))
+                    {
+                        continue;
+                    }
+
+                    if (currentTarget == null)
+                    {
+                        currentTarget = ally;
+
+                        currentRatio = (1 + ally.Health) / GetPriorety(ally.ChampionName);
+
+                        continue;
+                    }
+
+                    switch (selectMode)
+                    {
+                        case Mode.Auto:
+
+                            ratio = (1 + ally.Health) / GetPriorety(ally.ChampionName);
+
+                            if (currentRatio < ratio)
+                            {
+                                currentRatio = ratio;
+                                currentTarget = ally;
+                            }
+                            break;
+
+                        case Mode.LowHp:
+
+                            if (ally.Health < currentTarget.Health)
+                            {
+                                currentTarget = ally;
+                            }
+                            else if (Math.Abs(ally.Health - currentTarget.Health) < float.Epsilon)
+                            {
+                                ratio = (1 + ally.Health) / GetPriorety(ally.ChampionName);
+
+                                if (currentRatio < ratio)
+                                {
+                                    currentRatio = ratio;
+                                    currentTarget = ally;
+                                }
+                            }
+                            break;
+
+                        case Mode.Priority:
+
+                            if (GetPriorety(currentTarget.ChampionName) < GetPriorety(ally.ChampionName))
+                            {
+                                currentTarget = ally;
+                            }
+                            else if (GetPriorety(currentTarget.ChampionName) == GetPriorety(ally.ChampionName))
+                            {
+                                ratio = (1 + ally.Health) / GetPriorety(ally.ChampionName);
+
+                                if (currentRatio < ratio)
+                                {
+                                    currentRatio = ratio;
+                                    currentTarget = ally;
+                                }
+                            }
+                            break;
+
+                        case Mode.MostAp:
+
+                            if (currentTarget.FlatMagicDamageMod + currentTarget.BaseAbilityDamage <
+                                ally.FlatMagicDamageMod + ally.BaseAbilityDamage)
+                            {
+                                currentTarget = ally;
+                            }
+                            else if (
+                                Math.Abs(
+                                    currentTarget.FlatMagicDamageMod + currentTarget.BaseAbilityDamage -
+                                    (ally.FlatMagicDamageMod + ally.BaseAbilityDamage)) < float.Epsilon)
+                            {
+                                ratio = (1 + ally.Health) / GetPriorety(ally.ChampionName);
+
+                                if (currentRatio < ratio)
+                                {
+                                    currentRatio = ratio;
+                                    currentTarget = ally;
+                                }
+                            }
+                            break;
+
+                        case Mode.MostAd:
+
+                            if (currentTarget.BaseAttackDamage + currentTarget.FlatPhysicalDamageMod <
+                                ally.BaseAttackDamage + ally.FlatPhysicalDamageMod)
+                            {
+                                currentTarget = ally;
+                            }
+                            else if (
+                                Math.Abs(
+                                    currentTarget.BaseAttackDamage + currentTarget.FlatPhysicalDamageMod -
+                                    (ally.BaseAttackDamage + ally.FlatPhysicalDamageMod)) < float.Epsilon)
+                            {
+                                ratio = (1 + ally.Health) / GetPriorety(ally.ChampionName);
+
+                                if (currentRatio < ratio)
+                                {
+                                    currentRatio = ratio;
+                                    currentTarget = ally;
+                                }
+                            }
+                            break;
+
+                        case Mode.Closest:
+
+                            if (Player.Distance(currentTarget) > Player.Distance(ally))
+                            {
+                                currentTarget = ally;
+                            }
+                            break;
+
+                        case Mode.NearMouse:
+
+                            if (currentTarget.Distance(Game.CursorPos) > ally.Distance(Game.CursorPos))
+                            {
+                                currentTarget = ally;
+                            }
+                            break;
+                    }
+                }
+                _allyTarget = currentTarget;
+                return _allyTarget;
             }
-        }
-
-        /// <summary>
-        ///     Searches for the enemy target with setMode, setRange and extend monitar range. 
-        ///     Then returns it.
-        /// </summary>
-        public static Obj_AI_Hero SearchForEnemyTarget(Mode setMode, float setRange)
-        {
-            switch (setMode)
-            {
-                case Mode.LowHP:
-                    return GetLowHPEnemy(setRange, _extendMonitarRange);
-                case Mode.Priority:
-                    return GetPrioretyEnemy(setRange, _extendMonitarRange);
-                case Mode.MostAP:
-                    return GetMostAPEnemy(setRange, _extendMonitarRange);
-                case Mode.MostAD:
-                    return GetMostADEnemy(setRange, _extendMonitarRange);
-                case Mode.Closest:
-                    return GetClosestEnemy(_range, _extendMonitarRange);
-                case Mode.NearMouse:
-                    return GetNearMouseEnemy(setRange, _extendMonitarRange);
-                default:
-                    return null;
-            }
-        }
-
-        /// <summary>
-        ///     Searches for the enemy target with setMode, setRange and setExtendMonitarRange. 
-        ///     Then returns it.
-        /// </summary>
-        public static Obj_AI_Hero SearchForEnemyTarget(Mode setMode, float setRange, float setExtendMonitarRange)
-        {
-            switch (setMode)
-            {
-                case Mode.LowHP:
-                    return GetLowHPEnemy(setRange, setExtendMonitarRange);
-                case Mode.Priority:
-                    return GetPrioretyEnemy(setRange, setExtendMonitarRange);
-                case Mode.MostAP:
-                    return GetMostAPEnemy(setRange, setExtendMonitarRange);
-                case Mode.MostAD:
-                    return GetMostADEnemy(setRange, setExtendMonitarRange);
-                case Mode.Closest:
-                    return GetClosestEnemy(_range, _extendMonitarRange);
-                case Mode.NearMouse:
-                    return GetNearMouseEnemy(setRange, setExtendMonitarRange);
-                default:
-                    return null;
-            }
-        }
-
-        /// <summary>
-        ///     Searches for the target with current ally settings and sets it as SelectedAllyTarget. 
-        /// </summary>
-        public static void SearchForAllyTarget()
-        {
-            switch (CurrentAllyMode)
-            {
-                case Mode.LowHP:
-                    SelectedAllyTarget = GetLowHPEnemy(_range, _extendMonitarRange);
-                    return;
-                case Mode.Priority:
-                    GetPrioretyAlly(_range, _extendMonitarRange);
-                    return;
-                case Mode.MostAP:
-                    SelectedAllyTarget = GetMostAPAlly(_range, _extendMonitarRange);
-                    return;
-                case Mode.MostAD:
-                    SelectedAllyTarget = GetMostADAlly(_range, _extendMonitarRange);
-                    return;
-                case Mode.Closest:
-                    SelectedAllyTarget = GetClosestAlly(_range, _extendMonitarRange);
-                    return;
-                case Mode.NearMouse:
-                    SelectedAllyTarget = GetNearMouseAlly(_range, _extendMonitarRange);
-                    return;
-                default:
-                    return;
-            }
-        }
-
-        /// <summary>
-        ///     Searches for the target with setAllyMode and returns it. 
-        /// </summary>
-        public static Obj_AI_Hero SearchForAllyTarget(Mode setAllyMode)
-        {
-            switch (setAllyMode)
-            {
-                case Mode.LowHP:
-                    return GetLowHPEnemy(_range, _extendMonitarRange);
-
-                case Mode.Priority:
-                    return GetPrioretyAlly(_range, _extendMonitarRange);
-
-                case Mode.MostAP:
-                    return GetMostAPAlly(_range, _extendMonitarRange);
-
-                case Mode.MostAD:
-                    return GetMostADAlly(_range, _extendMonitarRange);
-
-                case Mode.Closest:
-                    return GetClosestAlly(_range, _extendMonitarRange);
-
-                case Mode.NearMouse:
-                    return GetNearMouseAlly(_range, _extendMonitarRange);
-
-                default:
-                    return null;
-            }
-        }
-
-        /// <summary>
-        ///     Searches for the target with setAllyMode, setRange and returns it. 
-        /// </summary>
-        public static Obj_AI_Hero SearchForAllyTarget(Mode setAllyMode, float setRange)
-        {
-            switch (setAllyMode)
-            {
-                case Mode.LowHP:
-                    return GetLowHPEnemy(setRange, _extendMonitarRange);
-
-                case Mode.Priority:
-                    return GetPrioretyAlly(setRange, _extendMonitarRange);
-
-                case Mode.MostAP:
-                    return GetMostAPAlly(setRange, _extendMonitarRange);
-
-                case Mode.MostAD:
-                    return GetMostADAlly(setRange, _extendMonitarRange);
-
-                case Mode.Closest:
-                    return GetClosestAlly(setRange, _extendMonitarRange);
-
-                case Mode.NearMouse:
-                    return GetNearMouseAlly(setRange, _extendMonitarRange);
-
-                default:
-                    return null;
-            }
-        }
-
-        /// <summary>
-        ///     Searches for the target with setAllyMode, setRange, setExtendMonitarRange and returns it. 
-        /// </summary>
-        public static Obj_AI_Hero SearchForAllyTarget(Mode setAllyMode, float setRange, float setExtendMonitarRange)
-        {
-            switch (setAllyMode)
-            {
-                case Mode.LowHP:
-                    return GetLowHPEnemy(setRange, setExtendMonitarRange);
-
-                case Mode.Priority:
-                    return GetPrioretyAlly(setRange, setExtendMonitarRange);
-
-                case Mode.MostAP:
-                    return GetMostAPAlly(setRange, setExtendMonitarRange);
-
-                case Mode.MostAD:
-                    return GetMostADAlly(setRange, setExtendMonitarRange);
-
-                case Mode.Closest:
-                    return GetClosestAlly(setRange, setExtendMonitarRange);
-
-                case Mode.NearMouse:
-                    return GetNearMouseAlly(setRange, setExtendMonitarRange);
-
-                default:
-                    return null;
-            }
-        }
-
-        static void Drawing_OnDraw(EventArgs args)
-        {
-            if (!SL.Self.IsDead && SelectedEnemyTarget != null && SelectedEnemyTarget.IsVisible && !SelectedEnemyTarget.IsDead)
-            {
-                Render.Circle.DrawCircle(SelectedEnemyTarget.Position, 150, Color.Red, 5, true);
-            }
-        }
-
-        static void Game_OnGameUpdate(EventArgs args)
-        {
-            if (!_enableSTS) return;
-            if (!_updateTarget) return;
-            SearchForEnemyTarget();
-            SearchForAllyTarget();
         }
     }
 }

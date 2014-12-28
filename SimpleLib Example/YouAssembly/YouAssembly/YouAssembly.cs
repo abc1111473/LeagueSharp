@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using LeagueSharp;
 using LeagueSharp.Common;
 using SimpleLib;
@@ -11,10 +7,11 @@ namespace YouAssemblyNameSpace
 {
     class YouAssembly : SL
     {
+        private static Menu menu;
         public YouAssembly()
         {
-            CustomEvents.Game.OnGameLoad += Game_OnGameLoad;
-            InitSL();
+            CustomEvents.Game.OnGameLoad += OnLoad;
+            InitSimpleLib(1000); //Select range for STS
         }
 
         public override void Presets()
@@ -47,16 +44,19 @@ namespace YouAssemblyNameSpace
             //skinManager.AddSkin("Reverse Annie");
             //skinManager.AddSkin("Franken Tibbers Annie");
             //skinManager.AddSkin("Panda Annie");
+
+            //STS.MonitorRange = 1000;
+            //STS.EMR = 400;
+            //STS.CurrentDamagetType = STS.DamageType.Physical;
         }
 
-        void Game_OnGameLoad(EventArgs args)
+        private void OnLoad(EventArgs args)
         {
             Presets();
 
-            var menu = new Menu("You Assembly", "YouAssembly", true);
-
-            menu.AddSubMenu(STS.STSMenu);
-            menu.AddSubMenu(SOW.SOWMenu);
+            menu = new Menu("You Assembly", "YouAssembly", true);
+            STS.StsMenu(menu);
+            SOW.SowMenu(menu);
 
             //Your menu comes here
 
@@ -66,11 +66,17 @@ namespace YouAssemblyNameSpace
             //levelUpManager.AddToMenu(ExtrasMenu);
             //skinManager.AddToMenu(ExtrasMenu);
             //menu.AddSubMenu(ExtrasMenu);
-
+            
             menu.AddToMainMenu();
 
-            SOW.InitializeOrbwalker();
-            STS.InitializeSTS();
+            //Damage type can be set here STS.CurrentDamagetType = STS.DamageType.Hybrid;
+        }
+
+        public override void OnUpdate()
+        {
+            //In oreder for levelUpManager and SkinManager to work ther update must be set active here
+            //levelUpManager.Update(); if you dont have any lvl prioretys set just delete this line
+            //skinManager.Update(); if you dont have any skins set just delete this line
         }
 
         public override void OnDraw()
@@ -86,14 +92,14 @@ namespace YouAssemblyNameSpace
             //You can manualu search for targets using STS
         }
 
-        public override void OnHarass()
+        public override void OnMixed()
         {
-
+            
         }
 
         public override void OnLaneClear()
         {
-
+            
         }
 
         public override void OnLasthit()
@@ -101,25 +107,34 @@ namespace YouAssemblyNameSpace
 
         }
 
-        public override void OnStandby()
+        public override void OnLaneFreeze()
         {
-            //SOW.Mode.None 
-            //It can only hapen if you manualu set SOW.Mode to none
+           
         }
 
-        public override void OnPassive()
+        public override void OnFlee()
         {
-            //It hapens on every update regardless od the current SOW.Mode
-
-            //In oreder for levelUpManager and SkinManager to work ther update must be set active here
-            //levelUpManager.Update(); if you dont have any lvl prioretys set just delete this line
-            //skinManager.Update(); if you dont have any skins set just delete this line
+            
         }
 
-        public override void UnderTowerFarm(Obj_AI_Base minion)
+        public override void OnPlayerTowerAggro(Obj_AI_Turret turret, Obj_AI_Base target)
         {
-            //This is called when tower attacks enemy in range from you but it cant be last hit with AA
-            //It also includes enemy champs that are current tower targerts
+            
+        }
+
+        public override void OnEnemyTowerAggro(Obj_AI_Turret turret, Obj_AI_Base target)
+        {
+            
+        }
+
+        public override void OnAllyTowerAggro(Obj_AI_Turret turret, Obj_AI_Base target)
+        {
+            
+        }
+        
+        public override void OnMinionTowerAggro(Obj_AI_Turret turret, Obj_AI_Base target)
+        {
+            
         }
 
         public override void OnGapClose(ActiveGapcloser gapcloser)
@@ -132,7 +147,7 @@ namespace YouAssemblyNameSpace
 
         }
 
-        public override void OnProcessSpell(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
+        public override void OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
         {
 
         }
@@ -143,21 +158,6 @@ namespace YouAssemblyNameSpace
         }
 
         public override void OnSendPacket(GamePacketEventArgs args)
-        {
-
-        }
-
-        public override void OnBeforeAttack(SOW.BeforeAttackEventArgs args)
-        {
-
-        }
-
-        public override void OnAttack(Obj_AI_Base unit, Obj_AI_Base target)
-        {
-
-        }
-
-        public override void OnAfterAttack(Obj_AI_Base unit, Obj_AI_Base target)
         {
 
         }
