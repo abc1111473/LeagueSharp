@@ -786,8 +786,8 @@ namespace SimpleLib
         {
             if (OrbWalk && !MenuGUI.IsChatOpen && !Player.IsChannelingImportantSpell())
             {
-                //var target = GetTarget();
-                Orbwalk(null, Game.CursorPos);
+                var target = GetTarget();
+                Orbwalk(target, Game.CursorPos);
             }
 
             if (OnUpdate != null)
