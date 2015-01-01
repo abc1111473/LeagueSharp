@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using LeagueSharp;
 using LeagueSharp.Common;
-using SharpDX;
-using Collision = LeagueSharp.Common.Collision;
 
 namespace SimpleLib
 {
-    public class STS
+    public class SimpleTargetSelector
     {
         public enum DamageType
         {
@@ -179,12 +177,27 @@ namespace SimpleLib
         {
             get
             {
-                _extendedMonitorRange = _stsMenu.Item("EMR").GetValue<Slider>().Value;
+                try
+                {
+                    _extendedMonitorRange = _stsMenu.Item("EMR").GetValue<Slider>().Value;
+                    
+                }
+                catch
+                {
+                    // ignored
+                }
                 return _extendedMonitorRange;
             }
             set
             {
-                _stsMenu.Item("EMR").SetValue(new Slider(value, 0, 500));
+                try
+                {
+                    _stsMenu.Item("EMR").SetValue(new Slider(value, 0, 500));
+                }
+                catch
+                {
+                    // ignored
+                }
                 _extendedMonitorRange = value;
             }
         }
@@ -193,45 +206,58 @@ namespace SimpleLib
         {
             get
             {
-                switch (_stsMenu.Item("DmgType").GetValue<StringList>().SelectedIndex)
+                try
                 {
-                    case 0:
-                        _currentDamageType = DamageType.Magical;
-                        break;
-                    case 1:
-                        _currentDamageType = DamageType.Physical;
-                        break;
-                    case 2:
-                        _currentDamageType = DamageType.Hybrid;
-                        break;
-                    case 3:
-                        _currentDamageType = DamageType.True;
-                        break;
+                    switch (_stsMenu.Item("DmgType").GetValue<StringList>().SelectedIndex)
+                    {
+                        case 0:
+                            _currentDamageType = DamageType.Magical;
+                            break;
+                        case 1:
+                            _currentDamageType = DamageType.Physical;
+                            break;
+                        case 2:
+                            _currentDamageType = DamageType.Hybrid;
+                            break;
+                        case 3:
+                            _currentDamageType = DamageType.True;
+                            break;
+                    }
+                }
+                catch
+                {
+                    // ignored
                 }
                 return _currentDamageType;
             }
             set
             {
                 _currentDamageType = value;
-
-                switch (value)
+                try
                 {
-                    case DamageType.Magical:
-                        _stsMenu.Item("DmgType")
-                            .SetValue(new StringList(new[] { "Magical", "Physical", "Hybrid", "True" }));
-                        break;
-                    case DamageType.Physical:
-                        _stsMenu.Item("DmgType")
-                            .SetValue(new StringList(new[] { "Magical", "Physical", "Hybrid", "True" }, 1));
-                        break;
-                    case DamageType.Hybrid:
-                        _stsMenu.Item("DmgType")
-                            .SetValue(new StringList(new[] { "Magical", "Physical", "Hybrid", "True" }, 2));
-                        break;
-                    case DamageType.True:
-                        _stsMenu.Item("DmgType")
-                            .SetValue(new StringList(new[] { "Magical", "Physical", "Hybrid", "True" }, 3));
-                        break;
+                    switch (value)
+                    {
+                        case DamageType.Magical:
+                            _stsMenu.Item("DmgType")
+                                .SetValue(new StringList(new[] { "Magical", "Physical", "Hybrid", "True" }));
+                            break;
+                        case DamageType.Physical:
+                            _stsMenu.Item("DmgType")
+                                .SetValue(new StringList(new[] { "Magical", "Physical", "Hybrid", "True" }, 1));
+                            break;
+                        case DamageType.Hybrid:
+                            _stsMenu.Item("DmgType")
+                                .SetValue(new StringList(new[] { "Magical", "Physical", "Hybrid", "True" }, 2));
+                            break;
+                        case DamageType.True:
+                            _stsMenu.Item("DmgType")
+                                .SetValue(new StringList(new[] { "Magical", "Physical", "Hybrid", "True" }, 3));
+                            break;
+                    }
+                }
+                catch
+                {
+                    // ignored
                 }
             }
         }
@@ -240,78 +266,167 @@ namespace SimpleLib
         {
             get
             {
-                switch (_stsMenu.Item("TSMode").GetValue<StringList>().SelectedIndex)
+                try
                 {
-                    case 0:
-                        _enemyMode = Mode.Auto;
-                        break;
-                    case 1:
-                        _enemyMode = Mode.LowHp;
-                        break;
-                    case 2:
-                        _enemyMode = Mode.Priority;
-                        break;
-                    case 3:
-                        _enemyMode = Mode.MostAd;
-                        break;
-                    case 4:
-                        _enemyMode = Mode.MostAp;
-                        break;
-                    case 5:
-                        _enemyMode = Mode.Closest;
-                        break;
-                    case 6:
-                        _enemyMode = Mode.NearMouse;
-                        break;
-                    case 7:
-                        _enemyMode = Mode.Less;
-                        break;
-                    default:
-                        _enemyMode = Mode.None;
-                        break;
+                    switch (_stsMenu.Item("TSMode").GetValue<StringList>().SelectedIndex)
+                    {
+                        case 0:
+                            _enemyMode = Mode.Auto;
+                            break;
+                        case 1:
+                            _enemyMode = Mode.LowHp;
+                            break;
+                        case 2:
+                            _enemyMode = Mode.Priority;
+                            break;
+                        case 3:
+                            _enemyMode = Mode.MostAd;
+                            break;
+                        case 4:
+                            _enemyMode = Mode.MostAp;
+                            break;
+                        case 5:
+                            _enemyMode = Mode.Closest;
+                            break;
+                        case 6:
+                            _enemyMode = Mode.NearMouse;
+                            break;
+                        case 7:
+                            _enemyMode = Mode.Less;
+                            break;
+                        default:
+                            _enemyMode = Mode.None;
+                            break;
+                    }
+                }
+                catch
+                {
+                    // ignored
                 }
                 return _enemyMode;
             }
-            set { _enemyMode = value; }
+            set
+            {
+                _enemyMode = value;
+                try
+                {
+                    switch (value)
+                    {
+                        case Mode.Auto:
+                            _stsMenu.Item("TSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }));
+                            break;
+                        case Mode.LowHp:
+                            _stsMenu.Item("TSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 1));
+                            break;
+                        case Mode.Priority:
+                            _stsMenu.Item("TSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 2));
+                            break;
+                        case Mode.MostAp:
+                            _stsMenu.Item("TSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 3));
+                            break;
+                        case Mode.MostAd:
+                            _stsMenu.Item("TSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 4));
+                            break;
+                        case Mode.Closest:
+                            _stsMenu.Item("TSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 5));
+                            break;
+                        case Mode.NearMouse:
+                            _stsMenu.Item("TSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 6));
+                            break;
+                        case Mode.Less:
+                            _stsMenu.Item("TSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 7));
+                            break;
+                    }
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
         }
 
         public static Mode CurrentAllyMode
         {
             get
             {
-                switch (_stsAllyMenu.Item("AllyTSMode").GetValue<StringList>().SelectedIndex)
+                try
                 {
-                    case 0:
-                        _allyMode = Mode.Auto;
-                        break;
-                    case 1:
-                        _allyMode = Mode.LowHp;
-                        break;
-                    case 2:
-                        _allyMode = Mode.Priority;
-                        break;
-                    case 3:
-                        _allyMode = Mode.MostAd;
-                        break;
-                    case 4:
-                        _allyMode = Mode.MostAp;
-                        break;
-                    case 5:
-                        _allyMode = Mode.Closest;
-                        break;
-                    case 6:
-                        _allyMode = Mode.NearMouse;
-                        break;
-                    case 7:
-                        _allyMode = Mode.Less;
-                        break;
-                    default:
-                        _allyMode = Mode.None;
-                        break;
+                    switch (_stsAllyMenu.Item("AllyTSMode").GetValue<StringList>().SelectedIndex)
+                    {
+                        case 0:
+                            _allyMode = Mode.Auto;
+                            break;
+                        case 1:
+                            _allyMode = Mode.LowHp;
+                            break;
+                        case 2:
+                            _allyMode = Mode.Priority;
+                            break;
+                        case 3:
+                            _allyMode = Mode.MostAd;
+                            break;
+                        case 4:
+                            _allyMode = Mode.MostAp;
+                            break;
+                        case 5:
+                            _allyMode = Mode.Closest;
+                            break;
+                        case 6:
+                            _allyMode = Mode.NearMouse;
+                            break;
+                        case 7:
+                            _allyMode = Mode.Less;
+                            break;
+                        default:
+                            _allyMode = Mode.None;
+                            break;
+                    }
                 }
+                catch
+                {
+                    // ignored
+                }
+
                 return _allyMode;
             }
-            set { _allyMode = value; }
+            set
+            {
+                _allyMode = value;
+                try
+                {
+                    switch (value)
+                    {
+                        case Mode.Auto:
+                            _stsAllyMenu.Item("AllyTSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }));
+                            break;
+                        case Mode.LowHp:
+                            _stsAllyMenu.Item("AllyTSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 1));
+                            break;
+                        case Mode.Priority:
+                            _stsAllyMenu.Item("AllyTSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 2));
+                            break;
+                        case Mode.MostAp:
+                            _stsAllyMenu.Item("AllyTSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 3));
+                            break;
+                        case Mode.MostAd:
+                            _stsAllyMenu.Item("AllyTSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 4));
+                            break;
+                        case Mode.Closest:
+                            _stsAllyMenu.Item("AllyTSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 5));
+                            break;
+                        case Mode.NearMouse:
+                            _stsAllyMenu.Item("AllyTSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 6));
+                            break;
+                        case Mode.Less:
+                            _stsAllyMenu.Item("AllyTSMode").SetValue(new StringList(new[] { "Auto", "Low HP", "Priority", "Most AD", "Most AP", "Closest", "Near Mouse", "Less" }, 7));
+                            break;
+                    }
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
         }
 
         /// <summary>
@@ -345,7 +460,7 @@ namespace SimpleLib
         {
             _stsMenu = menu;
 
-            var stsMenu = new Menu("SimpleTargetSelector", "STS");
+            var stsMenu = new Menu("Simple Target Selector", "STS");
 
             var menuEnemyPriorety = new Menu("Enemy Priorety", "Priorety");
 

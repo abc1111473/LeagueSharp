@@ -7,11 +7,11 @@ namespace YouAssemblyNameSpace
 {
     class YouAssembly : SL
     {
-        private static Menu menu;
+
         public YouAssembly()
         {
-            CustomEvents.Game.OnGameLoad += OnLoad;
-            InitSimpleLib(1000); //Select range for STS
+            InitSimpleLib("YouTestAssembly", "YouAssembly", Orbwalker.SimpleOrbWalker, TargetSelector.SimpleTargetSelector);
+            //InitSimpleLib(string assemblyDisplayName, string assemblyName , Orbwalker orbwalker, TargetSelector targetSelector)
         }
 
         public override void Presets()
@@ -31,28 +31,26 @@ namespace YouAssemblyNameSpace
             //levelUpManager.Add("R > E > Q > W ", priority3);
             //var priority4 = new int[] { 3, 2, 3, 1, 3, 4, 3, 2, 1, 2, 4, 2, 2, 1, 1, 4, 1, 1 };
             //levelUpManager.Add("R > E > W > Q ", priority4);
-
+            
             // Set you champs Skins
             // Skins need to be set in the right oreder
             // Example for annie
-            //skinManager.AddSkin("Classic Annie");
-            //skinManager.AddSkin("Goth Annie");
-            //skinManager.AddSkin("Red Riding Annie");
-            //skinManager.AddSkin("Annie in Wonderland");
-            //skinManager.AddSkin("Prom Queen Annie");
-            //skinManager.AddSkin("Frostfire Annie");
-            //skinManager.AddSkin("Reverse Annie");
-            //skinManager.AddSkin("Franken Tibbers Annie");
-            //skinManager.AddSkin("Panda Annie");
+            //SkinManager.AddSkin("Classic Annie");
+            //SkinManager.AddSkin("Goth Annie");
+            //SkinManager.AddSkin("Red Riding Annie");
+            //SkinManager.AddSkin("Annie in Wonderland");
+            //SkinManager.AddSkin("Prom Queen Annie");
+            //SkinManager.AddSkin("Frostfire Annie");
+            //SkinManager.AddSkin("Reverse Annie");
+            //SkinManager.AddSkin("Franken Tibbers Annie");
+            //SkinManager.AddSkin("Panda Annie");
         }
 
-        private void OnLoad(EventArgs args)
+        public override void OnLoad()
         {
-            Presets();
-
-            menu = new Menu("You Assembly", "YouAssembly", true);
-            STS.StsMenu(menu);
-            SOW.SowMenu(menu);
+            //Menu has all ready been made for you
+            //All you need to do is to addwhat you want to it
+            //It all ready has Target Selector and OrbWalker
 
             //Your menu comes here
 
@@ -60,14 +58,15 @@ namespace YouAssemblyNameSpace
             //Example
             //var ExtrasMenu = new Menu("Extras", "Extras");
             //levelUpManager.AddToMenu(ExtrasMenu);
-            //skinManager.AddToMenu(ExtrasMenu);
-            //menu.AddSubMenu(ExtrasMenu);
-            
-            menu.AddToMainMenu();
+            //SkinManager.AddToMenu(ExtrasMenu);
+            //MainMenu.AddSubMenu(ExtrasMenu);
+           
+            MainMenu.AddToMainMenu();
 
-            STS.CurrentDamagetType = STS.DamageType.Hybrid;
+            //If you are using SimpleTargetSelector
             //Damage type can be set here STS.CurrentDamagetType = STS.DamageType.Hybrid;
         }
+
 
         public override void OnUpdate()
         {

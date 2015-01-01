@@ -71,6 +71,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LXOrbwalker.cs" />
+    <Compile Include="xSLxOrbwalker.cs" />
     <Compile Include="SimpleAssemblyManager.cs" />
     <Compile Include="SimpleCollision.cs" />
     <Compile Include="SimpleLib.cs" />

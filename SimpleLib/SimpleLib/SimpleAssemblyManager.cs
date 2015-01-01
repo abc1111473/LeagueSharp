@@ -96,8 +96,8 @@ namespace SimpleLib
                     return;
                 }
 
-                _sMenu.AddItem(new MenuItem(ObjectManager.Player.ChampionName, "Enable Skin Changer").SetValue(true));
-                _sMenu.AddItem(
+                menu.AddItem(new MenuItem(ObjectManager.Player.ChampionName, "Enable Skin Changer").SetValue(true));
+                menu.AddItem(
                     new MenuItem(ObjectManager.Player.ChampionName, "Skins").SetValue(
                         new StringList(_skins.ToArray())));
                 _selectedSkin = _sMenu.Item(ObjectManager.Player.ChampionName).GetValue<StringList>().SelectedIndex;

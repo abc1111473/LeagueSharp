@@ -5,8 +5,10 @@
 	Rewrote whole SimpleLib
 	Add Movement prediction for melee
 	New STS SOW SMM modes
-	New calls for Turret event OnPlayer OnEnemy OnAlly OnMinion tower agro
+	New calls for Turret events OnPlayer OnEnemy OnAlly OnMinion tower agro
 	Cast functions for summoner spells
+	Added suport for LXOrbWalker, xSLxOrbWalker, Common TargetSelector
+	Added some new functions to SimpleLib
 
 0.0.1.0:
 
