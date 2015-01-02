@@ -6,7 +6,7 @@ using LeagueSharp.Common;
 
 namespace SimpleLib
 {
-    public class SMM
+    public static class SMM
     {
         public enum MinionMode
         {

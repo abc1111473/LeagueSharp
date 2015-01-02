@@ -7,7 +7,7 @@ using Color = System.Drawing.Color;
 
 namespace SimpleLib
 {
-    public class SimpleOrbWalker
+    public static class SimpleOrbWalker
     {
         public delegate void AfterAttackEvenH(AttackableUnit unit, AttackableUnit target);
 
@@ -253,7 +253,7 @@ namespace SimpleLib
 
         private static void InitSOW()
         {
-            _playerMelee = IsMelee(Player);
+            _playerMelee = Player.IsMelee();
 
             Game.OnGameUpdate += Game_OnGameUpdate;
             Drawing.OnDraw += Drawing_OnDraw;
@@ -339,15 +339,15 @@ namespace SimpleLib
             _lastAutoAttackTime = 0;
         }
 
-        public static bool IsMelee(Obj_AI_Base unit)
+        public static bool IsMelee(this Obj_AI_Hero unit)
         {
             return unit.CombatType == GameObjectCombatType.Melee;
         }
 
 
-        public static float AutoAttackRange(AttackableUnit target = null)
+        public static float AutoAttackRange(this Obj_AI_Hero from, AttackableUnit target = null)
         {
-            var result = Player.AttackRange + Player.BoundingRadius;
+            var result = from.AttackRange + from.BoundingRadius;
             if (target != null)
                 result += target.BoundingRadius;
             if (target is Obj_AI_Hero)
@@ -359,13 +359,13 @@ namespace SimpleLib
         {
             if (target == null)
                 return false;
-            var myRange = AutoAttackRange(target);
+            var myRange = Player.AutoAttackRange(target);
             return target.IsValidTarget(myRange);
         }
 
-        public static float BasicAttackMissileSpeed()
+        public static float BasicAttackMissileSpeed(this Obj_AI_Hero target)
         {
-            return IsMelee(Player) ? float.MaxValue : Player.BasicAttack.MissileSpeed;
+            return target.IsMelee() ? float.MaxValue : target.BasicAttack.MissileSpeed;
         }
 
         private static void CheckAutoWindUp()
@@ -387,6 +387,11 @@ namespace SimpleLib
         public static float GetNextAATime()
         {
             return (_lastAutoAttackTime + Player.AttackDelay * 1000) - (Environment.TickCount + Game.Ping / 2 + 25);
+        }
+
+        public static float AttackSpeed(this Obj_AI_Base target)
+        {
+            return 1 / target.AttackDelay;
         }
 
         private static bool CanAttack()
@@ -559,7 +564,7 @@ namespace SimpleLib
 
             if (CurrentMode == Mode.Mixed)
             {
-                temp = SMM.GetMinion(AutoAttackRange(), SMM.MinionMode.LastHit, true, FarmDelay);
+                temp = SMM.GetMinion(Player.AutoAttackRange(), SMM.MinionMode.LastHit, true, FarmDelay);
 
                 if (temp.IsValidTarget())
                 {
@@ -576,7 +581,7 @@ namespace SimpleLib
 
             if (CurrentMode == Mode.Lasthit)
             {
-                temp = SMM.GetMinion(AutoAttackRange(), SMM.MinionMode.LastHit, true, FarmDelay);
+                temp = SMM.GetMinion(Player.AutoAttackRange(), SMM.MinionMode.LastHit, true, FarmDelay);
 
                 if (temp.IsValidTarget())
                 {
@@ -586,16 +591,16 @@ namespace SimpleLib
 
             if (CurrentMode == Mode.LaneClear)
             {
-                temp = SMM.GetMinion(AutoAttackRange(), SMM.MinionMode.LastHit, true, FarmDelay);
+                temp = SMM.GetMinion(Player.AutoAttackRange(), SMM.MinionMode.LastHit, true, FarmDelay);
 
                 if (temp.IsValidTarget())
                 {
                     return temp;
                 }
 
-                if (!SMM.ShouldWait(AutoAttackRange() + 200, FarmDelay))
+                if (!SMM.ShouldWait(Player.AutoAttackRange() + 200, FarmDelay))
                 {
-                    temp = SMM.GetMinion(AutoAttackRange(), SMM.MinionMode.LaneClear, true, FarmDelay);
+                    temp = SMM.GetMinion(Player.AutoAttackRange(), SMM.MinionMode.LaneClear, true, FarmDelay);
 
                     if (temp.IsValidTarget())
                     {
@@ -606,7 +611,7 @@ namespace SimpleLib
 
             if (CurrentMode == Mode.LaneFreeze)
             {
-                temp = SMM.GetMinion(AutoAttackRange() + 200, SMM.MinionMode.LaneFreez, true, FarmDelay);
+                temp = SMM.GetMinion(Player.AutoAttackRange() + 200, SMM.MinionMode.LaneFreez, true, FarmDelay);
 
                 if (temp.IsValidTarget())
                 {
@@ -614,14 +619,14 @@ namespace SimpleLib
                 }
             }
 
-            temp = SimpleTargetSelector.GetTurret(AutoAttackRange() + 150);
+            temp = SimpleTargetSelector.GetTurret(Player.AutoAttackRange() + 150);
 
             if (temp.IsValidTarget())
             {
                 return temp;
             }
 
-            temp = SimpleTargetSelector.GetInhibitorsNexus(AutoAttackRange() + 150);
+            temp = SimpleTargetSelector.GetInhibitorsNexus(Player.AutoAttackRange() + 150);
 
             return temp;
         }
@@ -631,7 +636,7 @@ namespace SimpleLib
             AttackableUnit temp;
             if (CurrentMode == Mode.Combo)
             {
-                temp = TargetSelector.GetTarget(AutoAttackRange(),TargetSelector.DamageType.Physical);
+                temp = TargetSelector.GetTarget(Player.AutoAttackRange(), TargetSelector.DamageType.Physical);
 
                 if (temp.IsValidTarget())
                 {
@@ -641,14 +646,14 @@ namespace SimpleLib
 
             if (CurrentMode == Mode.Mixed)
             {
-                temp = SMM.GetMinion(AutoAttackRange(), SMM.MinionMode.LastHit, true, FarmDelay);
+                temp = SMM.GetMinion(Player.AutoAttackRange(), SMM.MinionMode.LastHit, true, FarmDelay);
 
                 if (temp.IsValidTarget())
                 {
                     return temp;
                 }
 
-                temp = TargetSelector.GetTarget(AutoAttackRange(), TargetSelector.DamageType.Physical);
+                temp = TargetSelector.GetTarget(Player.AutoAttackRange(), TargetSelector.DamageType.Physical);
 
                 if (temp.IsValidTarget())
                 {
@@ -658,7 +663,7 @@ namespace SimpleLib
 
             if (CurrentMode == Mode.Lasthit)
             {
-                temp = SMM.GetMinion(AutoAttackRange(), SMM.MinionMode.LastHit, true, FarmDelay);
+                temp = SMM.GetMinion(Player.AutoAttackRange(), SMM.MinionMode.LastHit, true, FarmDelay);
 
                 if (temp.IsValidTarget())
                 {
@@ -668,16 +673,16 @@ namespace SimpleLib
 
             if (CurrentMode == Mode.LaneClear)
             {
-                temp = SMM.GetMinion(AutoAttackRange(), SMM.MinionMode.LastHit, true, FarmDelay);
+                temp = SMM.GetMinion(Player.AutoAttackRange(), SMM.MinionMode.LastHit, true, FarmDelay);
 
                 if (temp.IsValidTarget())
                 {
                     return temp;
                 }
 
-                if (!SMM.ShouldWait(AutoAttackRange() + 200, FarmDelay))
+                if (!SMM.ShouldWait(Player.AutoAttackRange() + 200, FarmDelay))
                 {
-                    temp = SMM.GetMinion(AutoAttackRange(), SMM.MinionMode.LaneClear, true, FarmDelay);
+                    temp = SMM.GetMinion(Player.AutoAttackRange(), SMM.MinionMode.LaneClear, true, FarmDelay);
 
                     if (temp.IsValidTarget())
                     {
@@ -688,7 +693,7 @@ namespace SimpleLib
 
             if (CurrentMode == Mode.LaneFreeze)
             {
-                temp = SMM.GetMinion(AutoAttackRange() + 200, SMM.MinionMode.LaneFreez, true, FarmDelay);
+                temp = SMM.GetMinion(Player.AutoAttackRange() + 200, SMM.MinionMode.LaneFreez, true, FarmDelay);
 
                 if (temp.IsValidTarget())
                 {
@@ -696,14 +701,14 @@ namespace SimpleLib
                 }
             }
 
-            temp = SimpleTargetSelector.GetTurret(AutoAttackRange() + 150);
+            temp = SimpleTargetSelector.GetTurret(Player.AutoAttackRange() + 150);
 
             if (temp.IsValidTarget())
             {
                 return temp;
             }
 
-            temp = SimpleTargetSelector.GetInhibitorsNexus(AutoAttackRange() + 150);
+            temp = SimpleTargetSelector.GetInhibitorsNexus(Player.AutoAttackRange() + 150);
 
             return temp;
         }
@@ -782,18 +787,18 @@ namespace SimpleLib
             {
                 return;
             }
-
+            
             if (_config.Item("DrawAARange").GetValue<Circle>().Active)
             {
                 Utility.DrawCircle(
-                    Player.Position, AutoAttackRange(), _config.Item("DrawAARange").GetValue<Circle>().Color);
+                    Player.Position, Player.AutoAttackRange(), _config.Item("DrawAARange").GetValue<Circle>().Color);
             }
             if (_config.Item("DrawEnemyAARange").GetValue<Circle>().Active)
             {
                 foreach (var enemy in SimpleTargetSelector.AllEnemys.Where(enemy => enemy.IsValidTarget(1500)))
                 {
                     Utility.DrawCircle(
-                        enemy.Position, AutoAttackRange(enemy),
+                        enemy.Position, Player.AutoAttackRange(enemy),
                         _config.Item("DrawEnemyAARange").GetValue<Circle>().Color);
                 }
             }
@@ -807,9 +812,9 @@ namespace SimpleLib
                 _config.Item("DrawnearKill").GetValue<Circle>().Active)
             {
                 var minionList = MinionManager.GetMinions(
-                    Player.Position, AutoAttackRange() + 500, MinionTypes.All, MinionTeam.Enemy,
+                    Player.Position, Player.AutoAttackRange() + 500, MinionTypes.All, MinionTeam.Enemy,
                     MinionOrderTypes.MaxHealth);
-                foreach (var minion in minionList.Where(minion => minion.IsValidTarget(AutoAttackRange() + 500)))
+                foreach (var minion in minionList.Where(minion => minion.IsValidTarget(Player.AutoAttackRange() + 500)))
                 {
                     var attackToKill = Math.Ceiling(minion.MaxHealth / Player.GetAutoAttackDamage(minion, true));
                     //var hpBarPosition = minion.HPBarPosition;

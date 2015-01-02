@@ -71,9 +71,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LevelUpManager.cs" />
     <Compile Include="LXOrbwalker.cs" />
+    <Compile Include="SimpleItems.cs" />
+    <Compile Include="SimpleSummonerSpell.cs" />
+    <Compile Include="SimpleUtility.cs" />
+    <Compile Include="SkinManager.cs" />
     <Compile Include="xSLxOrbwalker.cs" />
-    <Compile Include="SimpleAssemblyManager.cs" />
     <Compile Include="SimpleCollision.cs" />
     <Compile Include="SimpleLib.cs" />
     <Compile Include="SimpleMinionManager.cs" />

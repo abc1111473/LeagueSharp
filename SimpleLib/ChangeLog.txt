@@ -7,8 +7,12 @@
 	New STS SOW SMM modes
 	New calls for Turret events OnPlayer OnEnemy OnAlly OnMinion tower agro
 	Cast functions for summoner spells
-	Added suport for LXOrbWalker, xSLxOrbWalker, Common TargetSelector
+	Added suport for LXOrbWalker, xSLxOrbWalker, Common OrbWalker, Common TargetSelector
 	Added some new functions to SimpleLib
+	Added SimpleUtility
+	Added SimpleItems it support all active, consumable, toggle items
+	Added SimpleSummonerSpell class
+	Removed SAM and moved LevelUpManager and SkinManager to their own classes
 
 0.0.1.0:
 

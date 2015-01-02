@@ -11,7 +11,6 @@ namespace YouAssemblyNameSpace
         public YouAssembly()
         {
             InitSimpleLib("YouTestAssembly", "YouAssembly", Orbwalker.SimpleOrbWalker, TargetSelector.SimpleTargetSelector);
-            //InitSimpleLib(string assemblyDisplayName, string assemblyName , Orbwalker orbwalker, TargetSelector targetSelector)
         }
 
         public override void Presets()
@@ -48,10 +47,6 @@ namespace YouAssemblyNameSpace
 
         public override void OnLoad()
         {
-            //Menu has all ready been made for you
-            //All you need to do is to addwhat you want to it
-            //It all ready has Target Selector and OrbWalker
-
             //Your menu comes here
 
             //Menu for the levelUpManager and skinManager you can add wherever you like
@@ -63,7 +58,6 @@ namespace YouAssemblyNameSpace
            
             MainMenu.AddToMainMenu();
 
-            //If you are using SimpleTargetSelector
             //Damage type can be set here STS.CurrentDamagetType = STS.DamageType.Hybrid;
         }
 

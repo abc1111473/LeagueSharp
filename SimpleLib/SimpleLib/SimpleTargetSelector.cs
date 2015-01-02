@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using LeagueSharp;
 using LeagueSharp.Common;
 
 namespace SimpleLib
 {
-    public class SimpleTargetSelector
+    public static class SimpleTargetSelector
     {
         public enum DamageType
         {
@@ -74,7 +75,7 @@ namespace SimpleLib
 
         private static Menu _stsMenu;
         private static Menu _stsAllyMenu;
-        public static Obj_AI_Hero Player = ObjectManager.Player;
+        private static Obj_AI_Hero Player = ObjectManager.Player;
         private static float _monitorRange = Player.AttackRange;
         private static int _extendedMonitorRange = 400;
         private static DamageType _currentDamageType = DamageType.Hybrid;
@@ -451,6 +452,15 @@ namespace SimpleLib
         private static void InitSTS()
         {
             Game.OnWndProc += Game_OnWndProc;
+            Drawing.OnDraw += Drawing_OnDraw;
+        }
+
+        static void Drawing_OnDraw(EventArgs args)
+        {
+            if (_enemyTarget.IsValidTarget() && SimpleOrbWalker.Drawings)
+            {
+                Render.Circle.DrawCircle(_enemyTarget.Position, 150, Color.Red, 7, true);
+            }
         }
 
         /// <summary>
@@ -889,15 +899,11 @@ namespace SimpleLib
 
                     case Mode.MostAp:
 
-                        if (currentTarget.FlatMagicDamageMod + currentTarget.BaseAbilityDamage <
-                            enemy.FlatMagicDamageMod + enemy.BaseAbilityDamage)
+                        if (currentTarget.TotalMagicalDamage() < enemy.TotalMagicalDamage())
                         {
                             currentTarget = enemy;
                         }
-                        else if (
-                            Math.Abs(
-                                currentTarget.FlatMagicDamageMod + currentTarget.BaseAbilityDamage -
-                                (enemy.FlatMagicDamageMod + enemy.BaseAbilityDamage)) < float.Epsilon)
+                        else if (Math.Abs(currentTarget.TotalMagicalDamage() - enemy.TotalMagicalDamage()) < float.Epsilon)
                         {
                             ratio = tempPredictedDmg / (1 + enemy.Health) * GetPriorety(enemy.ChampionName);
 
@@ -911,15 +917,12 @@ namespace SimpleLib
 
                     case Mode.MostAd:
 
-                        if (currentTarget.BaseAttackDamage + currentTarget.FlatPhysicalDamageMod <
-                            enemy.BaseAttackDamage + enemy.FlatPhysicalDamageMod)
+                        if (currentTarget.TotalAttackDamage() < enemy.TotalAttackDamage())
                         {
                             currentTarget = enemy;
                         }
                         else if (
-                            Math.Abs(
-                                currentTarget.BaseAttackDamage + currentTarget.FlatPhysicalDamageMod -
-                                (enemy.BaseAttackDamage + enemy.FlatPhysicalDamageMod)) < float.Epsilon)
+                            Math.Abs(currentTarget.TotalAttackDamage() - enemy.TotalAttackDamage()) < float.Epsilon)
                         {
                             ratio = tempPredictedDmg / (1 + enemy.Health) * GetPriorety(enemy.ChampionName);
 
@@ -1036,15 +1039,11 @@ namespace SimpleLib
 
                         case Mode.MostAp:
 
-                            if (currentTarget.FlatMagicDamageMod + currentTarget.BaseAbilityDamage <
-                                ally.FlatMagicDamageMod + ally.BaseAbilityDamage)
+                            if (currentTarget.TotalMagicalDamage() < ally.TotalMagicalDamage())
                             {
                                 currentTarget = ally;
                             }
-                            else if (
-                                Math.Abs(
-                                    currentTarget.FlatMagicDamageMod + currentTarget.BaseAbilityDamage -
-                                    (ally.FlatMagicDamageMod + ally.BaseAbilityDamage)) < float.Epsilon)
+                            else if (Math.Abs(currentTarget.TotalMagicalDamage() - ally.TotalMagicalDamage()) < float.Epsilon)
                             {
                                 ratio = (1 + ally.Health) / GetPriorety(ally.ChampionName);
 
@@ -1058,15 +1057,11 @@ namespace SimpleLib
 
                         case Mode.MostAd:
 
-                            if (currentTarget.BaseAttackDamage + currentTarget.FlatPhysicalDamageMod <
-                                ally.BaseAttackDamage + ally.FlatPhysicalDamageMod)
+                            if (currentTarget.TotalAttackDamage() < ally.TotalAttackDamage())
                             {
                                 currentTarget = ally;
                             }
-                            else if (
-                                Math.Abs(
-                                    currentTarget.BaseAttackDamage + currentTarget.FlatPhysicalDamageMod -
-                                    (ally.BaseAttackDamage + ally.FlatPhysicalDamageMod)) < float.Epsilon)
+                            else if (Math.Abs(currentTarget.TotalAttackDamage() - ally.TotalAttackDamage()) < float.Epsilon)
                             {
                                 ratio = (1 + ally.Health) / GetPriorety(ally.ChampionName);
 

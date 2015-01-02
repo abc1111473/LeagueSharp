@@ -10,7 +10,6 @@ namespace SimpleLib
 {
     public static class SimpleCollision
     {
-
         public static bool YasuoWallCollision(float range, AttackableUnit target)
         {
             if (
@@ -19,19 +18,18 @@ namespace SimpleLib
             {
                 return false;
             }
-
-            var test = Collision.GetCollision(
+            
+            return Collision.GetCollision(
                 new List<Vector3> { ObjectManager.Player.Position, target.Position },
                 new PredictionInput
                 {
-                    //CollisionObjects = new[] { CollisionableObjects.YasuoWall },
+                    CollisionObjects = new[] { CollisionableObjects.YasuoWall },
                     //Type = SkillshotType.SkillshotLine,
-                    Range = range,
-                    //Radius = ObjectManager.Player.AttackRange,
+                    //Range = range,
+                    Radius = ObjectManager.Player.AttackRange,
                     Delay = (int) ObjectManager.Player.AttackDelay * 1000,
-                    Speed = (int) ObjectManager.Player.BasicAttack.MissileSpeed
-                });
-            return test.Any(wall => wall.Name == "_w_windwall_enemy_0.\\.troy");
+                    Speed = (int) ObjectManager.Player.BasicAttackMissileSpeed()
+                }).Count == 1;
         }
     }
 }

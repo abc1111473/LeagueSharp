@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using LeagueSharp;
 using LeagueSharp.Common;
@@ -13,7 +14,7 @@ namespace SimpleLib
             SimpleOrbWalker,
             LXOrbWalker,
             xSLxOrbWalker,
-            //CommonOrbWalker,
+            CommonOrbWalker,
             None
         }
 
@@ -34,7 +35,7 @@ namespace SimpleLib
             Flee,
             None
         }
-
+        
         public static Orbwalker CurrentOrbWalker
         {
             get { return _orbwalker; }
@@ -56,21 +57,9 @@ namespace SimpleLib
 
         public static Obj_AI_Hero Player = ObjectManager.Player;
 
-        public static SAM.LevelUpManager LevelUpManager = new SAM.LevelUpManager();
-        public static SAM.SkinManager SkinManager = new SAM.SkinManager();
-
-        public static Spell Barrier = new Spell(Player.GetSpellSlot("SummonerBarrier"));
-        public static Spell Clairvoyance = new Spell(Player.GetSpellSlot("SummonerClairvoyance"));
-        public static Spell Clarity = new Spell(Player.GetSpellSlot("SummonerMana"), 600);
-        public static Spell Cleanse = new Spell(Player.GetSpellSlot("SummonerBoost"));
-        public static Spell Exhaust = new Spell(Player.GetSpellSlot("SummonerExhaust"), 650);
-        public static Spell Flash = new Spell(Player.GetSpellSlot("SummonerFlash"), 400);
-        public static Spell Ghost = new Spell(Player.GetSpellSlot("SummonerHaste"));
-        public static Spell Heal = new Spell(Player.GetSpellSlot("SummonerHeal"), 700);
-        public static Spell Ignite = new Spell(Player.GetSpellSlot("SummonerDot"), 600);
-        public static Spell Revive = new Spell(Player.GetSpellSlot("SummonerRevive"));
-        public static Spell Smite = new Spell(Player.GetSpellSlot("SummonerSmite"), 700);
-        public static Spell Teleport = new Spell(Player.GetSpellSlot("SummonerTeleport"));
+        public static LevelUpManager LevelUpManager = new LevelUpManager();
+        //public static SkinManager SkinManager = new SkinManager();
+        public static Orbwalking.Orbwalker CommonOrbwalker;
 
         private static Orbwalker _orbwalker = Orbwalker.SimpleOrbWalker;
         private static TargetSelector _targetSelector = TargetSelector.SimpleTargetSelector;
@@ -149,8 +138,11 @@ namespace SimpleLib
                         MainMenu.AddSubMenu(xSLxOrbwalker.xSLxMenu);
                         break;
 
-                    //case Orbwalker.CommonOrbWalker:
-
+                    case Orbwalker.CommonOrbWalker:
+                        var common = new Menu("Common OrbWalker", "COB");
+                        CommonOrbwalker = new Orbwalking.Orbwalker(common);
+                        MainMenu.AddSubMenu(common);
+                        break;
 
                     case Orbwalker.None:
                         break;
@@ -422,311 +414,5 @@ namespace SimpleLib
         public virtual void OnSendPacket(GamePacketEventArgs args) {}
         public virtual void OnProcessPacket(GamePacketEventArgs args) {}
         public virtual void OnUpdate() {}
-
-        public static void CastBarrier()
-        {
-            if (Barrier.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Barrier.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            Barrier.Cast();
-        }
-
-        public static void CastBarrier(float healthPrecent)
-        {
-            if (Barrier.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Barrier.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            if (Player.HealthPercentage() <= healthPrecent)
-            {
-                Barrier.Cast();
-            }
-        }
-
-        public static void CastClairvoyance(Vector3 position)
-        {
-            if (Clairvoyance.Slot != SpellSlot.Unknown &&
-                Player.Spellbook.CanUseSpell(Clairvoyance.Slot) == SpellState.Ready)
-            {
-                Clairvoyance.Cast(position);
-            }
-        }
-
-        public static void CastClarity()
-        {
-            if (Clarity.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Clarity.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            Clarity.Cast();
-        }
-
-        public static void CastClarity(float manaProcent)
-        {
-            if (Clarity.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Clarity.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            if (Player.ManaPercentage() <= manaProcent)
-            {
-                Clarity.Cast();
-            }
-        }
-
-        public static void CastClarity(int numberOfAllys)
-        {
-            if (Clarity.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Clarity.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            var temp = ObjectManager.Get<Obj_AI_Hero>().Where(ally => ally.IsAlly && ally.IsValidTarget(600));
-
-            if (temp.Count() >= numberOfAllys)
-            {
-                Clarity.Cast();
-            }
-        }
-
-        public static void CastCleanse()
-        {
-            if (Cleanse.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Cleanse.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            Cleanse.Cast();
-        }
-
-        public static void CastExhaust(Obj_AI_Hero target)
-        {
-            if (Exhaust.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Exhaust.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            if (target.IsValidTarget(650))
-            {
-                Exhaust.Cast(target);
-            }
-        }
-
-        public static void CastFlash(Vector3 position)
-        {
-            if (Flash.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Flash.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            Flash.Cast(position);
-        }
-
-        public static void CastGhost()
-        {
-            if (Ghost.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Ghost.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            Ghost.Cast();
-        }
-
-        public static void CastHeal()
-        {
-            if (Heal.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Heal.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            Heal.Cast();
-        }
-
-        public static void CastHeal(float healtProcent)
-        {
-            if (Heal.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Heal.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            if (Player.HealthPercentage() <= healtProcent)
-            {
-                Heal.Cast();
-            }
-        }
-
-        public static void CastHeal(int numberOfAllys)
-        {
-            if (Heal.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Heal.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            var temp = ObjectManager.Get<Obj_AI_Hero>().Where(ally => ally.IsAlly && ally.IsValidTarget(700));
-
-            if (temp.Count() >= numberOfAllys)
-            {
-                Heal.Cast();
-            }
-        }
-
-        public static void CastIgnite(Obj_AI_Hero target)
-        {
-            if (Ignite.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Ignite.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            if (target.IsValidTarget(600))
-            {
-                Ignite.Cast(target);
-            }
-        }
-
-        public static void CastRevive()
-        {
-            if (Revive.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Revive.Slot) != SpellState.Ready ||
-                !Player.IsDead)
-            {
-                return;
-            }
-
-            Revive.Cast();
-        }
-
-        public static void CastSmite(Obj_AI_Base target)
-        {
-            if (Smite.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Smite.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            if (target.IsValidTarget(700))
-            {
-                Smite.Cast(target);
-            }
-        }
-
-        public static void CastTeleport(Obj_AI_Base target)
-        {
-            if (Teleport.Slot == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Teleport.Slot) != SpellState.Ready)
-            {
-                return;
-            }
-
-            Teleport.Cast(target);
-        }
-
-        /// <summary>
-        ///     Is Player recalling
-        /// </summary>
-        public static bool IsRecalling()
-        {
-            return Player.IsRecalling();
-        }
-
-        /// <summary>
-        ///     Is target recalling
-        /// </summary>
-        public static bool IsRecalling(Obj_AI_Hero target)
-        {
-            return target.IsRecalling();
-        }
-
-        /// <summary>
-        ///     Returns the number of enemys at position with selected range
-        /// </summary>
-        public int countEnemiesNearPosition(Vector3 pos, float range)
-        {
-            return
-                ObjectManager.Get<Obj_AI_Hero>()
-                    .Count(hero => hero.IsEnemy && !hero.IsDead && hero.IsValid && hero.Distance(pos) <= range);
-        }
-
-        /// <summary>
-        ///     Returns the number of allys at position with selected range
-        /// </summary>
-        public int countAlliesNearPosition(Vector3 pos, float range)
-        {
-            return
-                ObjectManager.Get<Obj_AI_Hero>()
-                    .Count(hero => hero.IsAlly && !hero.IsDead && hero.IsValid && hero.Distance(pos) <= range);
-        }
-
-        /// <summary>
-        ///     Returns mana procent for the target. If target = null returns mana procent for the Player.
-        /// </summary>
-        public float GetManaPercent(Obj_AI_Hero unit = null)
-        {
-            if (unit == null)
-            {
-                unit = Player;
-            }
-            return (unit.Mana / unit.MaxMana) * 100f;
-        }
-
-        /// <summary>
-        ///     Returns health procent for the target. If target = null returns health procent for the Player.
-        /// </summary>
-        public float GetHealthPercent(Obj_AI_Hero unit = null)
-        {
-            if (unit == null)
-            {
-                unit = Player;
-            }
-            return (unit.Health / unit.MaxHealth) * 100f;
-        }
-
-        /// <summary>
-        ///     Returns whether the target has the set buff.
-        /// </summary>
-        public bool HasBuff(Obj_AI_Base target, string buffName)
-        {
-            return target.Buffs.Any(buff => buff.Name == buffName || buff.Name.Contains(buffName));
-        }
-
-        /// <summary>
-        ///     Returns weather player is inside player.enemy turret range
-        /// </summary>
-        public static bool IsInsideEnemyTurrentRange()
-        {
-            return
-                ObjectManager.Get<Obj_AI_Turret>()
-                    .Any(turret => turret.IsEnemy && turret.Health > 0 && turret.Distance(Player) <= 775);
-        }
-
-        /// <summary>
-        ///     Returns weather target is inside player.enemy turret range
-        /// </summary>
-        public static bool IsInsideEnemyTurrentRange(Obj_AI_Hero target)
-        {
-            return
-                ObjectManager.Get<Obj_AI_Turret>()
-                    .Any(turret => turret.IsEnemy && turret.Health > 0 && turret.Distance(target) <= 775);
-        }
-
-        /// <summary>
-        ///     Returns weather player is inside player.ally turret range
-        /// </summary>
-        public static bool IsInsideAllyTurrentRange()
-        {
-            return
-                ObjectManager.Get<Obj_AI_Turret>()
-                    .Any(turret => turret.IsAlly && turret.Health > 0 && turret.Distance(Player) <= 775);
-        }
-
-        /// <summary>
-        ///     Returns weather target is inside player.ally turret range
-        /// </summary>
-        public static bool IsInsideAllyTurrentRange(Obj_AI_Hero target)
-        {
-            return
-                ObjectManager.Get<Obj_AI_Turret>()
-                    .Any(turret => turret.IsAlly && turret.Health > 0 && turret.Distance(target) <= 775);
-        }
     }
 }
