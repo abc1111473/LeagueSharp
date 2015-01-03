@@ -125,6 +125,14 @@ namespace SimpleLib
 
         public static class Draw
         {
+
+            public static void DrawLine(Line line, Color color, int width)
+            {
+                var from = Drawing.WorldToScreen(line.LineStart.To3D());
+                var to = Drawing.WorldToScreen(line.LineEnd.To3D());
+                Drawing.DrawLine(from, to, width, color);
+            }
+
             public static void DrawLine(Vector2 start, Vector2 end, Color color, int width = 1)
             {
                 var from = Drawing.WorldToScreen(start.To3D());
@@ -206,6 +214,34 @@ namespace SimpleLib
             {
                 var poly = sector.ToPolygon();
                 DrawPolygon(poly, color, width);
+            }
+        }
+
+        public class Line
+        {
+            public Vector2 LineStart;
+            public Vector2 LineEnd;
+            public float Length;
+
+            public Line(Vector2 start, Vector2 end, float length)
+            {
+                LineStart = start;
+                LineEnd = (end - start).Normalized() * length + start;
+                Length = length;
+            }
+
+            public void ChangeLength(float newLenght)
+            {
+                LineEnd = LineEnd.Normalized() * newLenght;
+                Length = newLenght;
+            }
+
+            public Polygon ToPolygon()
+            {
+                var result = new Polygon();
+                result.Add(LineStart);
+                result.Add(LineEnd);
+                return result;
             }
         }
 
