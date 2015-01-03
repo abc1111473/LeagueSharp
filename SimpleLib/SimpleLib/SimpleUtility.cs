@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using LeagueSharp;
 using LeagueSharp.Common;
 using SharpDX;
@@ -32,9 +29,26 @@ namespace SimpleLib
             return target.BaseAbilityDamage + target.FlatMagicDamageMod;
         }
 
-        public static float TotalAttackDamage(this Obj_AI_Base target)
+        public static float TotalAttackDamage(this Obj_AI_Hero target)
         {
             return target.BaseAttackDamage + target.FlatPhysicalDamageMod;
+        }
+
+        public static int ImmobileTime(this Obj_AI_Hero unit)
+        {
+            var result = 0f;
+
+            foreach (var buff in unit.Buffs)
+            {
+                if (buff.IsActive && Game.Time <= buff.EndTime &&
+                    (buff.Type == BuffType.Charm || buff.Type == BuffType.Knockup || buff.Type == BuffType.Stun ||
+                     buff.Type == BuffType.Suppression || buff.Type == BuffType.Snare))
+                {
+                    result = Math.Max(result, buff.EndTime);
+                }
+            }
+
+            return (result == 0f) ? -1 : (int)(Environment.TickCount + (result - Game.Time) * 1000);
         }
 
         public static void AddLabel(this Menu menu, string name, string displayName)
