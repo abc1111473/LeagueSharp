@@ -8,13 +8,12 @@ using Color = System.Drawing.Color;
 using Path = System.Collections.Generic.List<ClipperLib.IntPoint>;
 using Paths = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
 using GamePath = System.Collections.Generic.List<SharpDX.Vector2>;
+using Matrix = System.Drawing.Drawing2D.Matrix;
 
 namespace SimpleLib
 {
     public static class SimpleGeometry
     {
-        private const int CircleLineSegmentNumber = 20;
-
         public static Vector3 SwitchYZ(this Vector3 v)
         {
             return new Vector3(v.X, v.Z, v.Y);
@@ -49,24 +48,57 @@ namespace SimpleLib
         {
             var sin = Math.Sin(angle);
             var cos = Math.Cos(angle);
-
+            
             var x = ((rotated.X - around.X) * cos) - ((around.Y - rotated.Y) * sin) + around.X;
-            var y = ((around.Y - rotated.Y) * cos) - ((rotated.X - around.X) * sin) + around.Y;
+            var y = ((around.Y - rotated.Y) * cos) + ((rotated.X - around.X) * sin) + around.Y;
 
             return new Vector2((float) x, (float) y);
         }
 
-        public static void RotatePolygon(this Polygon polygon, Vector2 around, float angle)
+        public static Polygon RotatePolygon(this Polygon polygon,Vector2 around ,float angle)
         {
-            List<Vector2> tempList = new List<Vector2>();
+            if (polygon.Points.Count == 0)
+                return polygon;
 
-            foreach (var point in polygon.Points)
+            Polygon p = new Polygon();
+
+            foreach (var poinit in polygon.Points)
             {
-                var temp = point.RotateAroundPoint(around, angle);
-                tempList.Add(temp);
+                var polygonePoint = poinit.RotateAroundPoint(around, angle);
+                p.Add(polygonePoint);
             }
+            return p;
+        }
 
-            polygon.Points = tempList;
+        public static Polygon RotatePolygon(this Polygon polygon, Vector2 around, Vector2 direction)
+        {
+            var deltaX = around.X - direction.X;
+            var deltaY = around.Y - direction.Y;
+            var angle = (float) Math.Atan2(deltaY, deltaX);
+            return RotatePolygon(polygon, around, angle - DegreeToRadian(90));
+        }
+
+
+        public static Polygon MovePolygone(this Polygon polygon, Vector2 moveTo)
+        {
+            if (polygon.Points.Count == 0)
+                return polygon;
+
+            Polygon p = new Polygon();
+
+            p.Add(moveTo);
+
+            int count = polygon.Points.Count;
+
+            var startPoint = polygon.Points[0];
+
+            for (int i = 1; i < count; i++)
+            {
+                var polygonePoint = polygon.Points[i];
+
+                p.Add(new Vector2(moveTo.X + (polygonePoint.X - startPoint.X), moveTo.Y + (polygonePoint.Y - startPoint.Y)));
+            }
+            return p;
         }
 
         public static List<Polygon> ToPolygons(this Paths v)
@@ -125,6 +157,12 @@ namespace SimpleLib
 
         public static class Draw
         {
+
+            public static void DrawArc(Arc arc, Color color, int width = 1)
+            {
+                var a = arc.ToPolygon();
+                DrawPolygon(a, color, width);
+            }
 
             public static void DrawLine(Line line, Color color, int width)
             {
@@ -217,6 +255,55 @@ namespace SimpleLib
             }
         }
 
+        public class Arc
+        {
+            public Vector2 StartPos;
+            public Vector2 EndPos;
+            public float Angle;
+            public float Radius;
+            private int CircleLineSegmentNumber;
+
+            public Arc(Vector2 start, Vector2 end, float angle, float radius, int quality = 20)
+            {
+                StartPos = start;
+                EndPos = (end - start).Normalized();
+                Angle = angle;
+                Radius = radius;
+                CircleLineSegmentNumber = quality;
+            }
+
+            public Polygon ToPolygon(int offset = 0)
+            {
+                var result = new Polygon();
+                var outRadius = (Radius + offset) / (float)Math.Cos(2 * Math.PI / CircleLineSegmentNumber);
+                var Side1 = EndPos.Rotated(-Angle * 0.5f);
+                for (var i = 0; i <= CircleLineSegmentNumber; i++)
+                {
+                    var cDirection = Side1.Rotated(i * Angle / CircleLineSegmentNumber).Normalized();
+                    result.Add(new Vector2(StartPos.X + outRadius * cDirection.X, StartPos.Y + outRadius * cDirection.Y));
+                }
+                return result;
+            }
+
+            public Path ToClipperPath()
+            {
+                var poly = ToPolygon();
+                var result = new Path(poly.Points.Count);
+
+                foreach (var point in poly.Points)
+                {
+                    result.Add(new IntPoint(point.X, point.Y));
+                }
+                return result;
+            }
+
+            public bool IsOutside(Vector2 point)
+            {
+                var p = new IntPoint(point.X, point.Y);
+                return Clipper.PointInPolygon(p, ToClipperPath()) != 1;
+            }
+        }
+
         public class Line
         {
             public Vector2 LineStart;
@@ -254,6 +341,14 @@ namespace SimpleLib
                 Points.Add(point);
             }
 
+            public void Add(Polygon polygon)
+            {
+                foreach (var point in polygon.Points)
+                {
+                    Points.Add(point);
+                }
+            }
+
             public Path ToClipperPath()
             {
                 var result = new Path(Points.Count);
@@ -275,11 +370,13 @@ namespace SimpleLib
         {
             public Vector2 Center;
             public float Radius;
+            private int CircleLineSegmentNumber;
 
-            public Circle(Vector2 center, float radius)
+            public Circle(Vector2 center, float radius, int quality = 20)
             {
                 Center = center;
                 Radius = radius;
+                CircleLineSegmentNumber = quality;
             }
 
             public Polygon ToPolygon(int offset = 0, float overrideWidth = -1)
@@ -372,12 +469,14 @@ namespace SimpleLib
             public Vector2 Center;
             public float InnerRadius;
             public float OuterRadius;
+            private int CircleLineSegmentNumber;
 
-            public Ring(Vector2 center, float innerRadius, float outerRadius)
+            public Ring(Vector2 center, float innerRadius, float outerRadius, int quality = 20)
             {
                 Center = center;
                 InnerRadius = innerRadius;
                 OuterRadius = outerRadius;
+                CircleLineSegmentNumber = quality;
             }
 
             public Polygon ToPolygon(int offset = 0)
@@ -428,13 +527,15 @@ namespace SimpleLib
             public Vector2 Center;
             public Vector2 Direction;
             public float Radius;
+            private int CircleLineSegmentNumber;
 
-            public Sector(Vector2 center, Vector2 direction, float angle, float radius)
+            public Sector(Vector2 center, Vector2 direction, float angle, float radius, int quality = 20)
             {
                 Center = center;
                 Direction = (direction - center).Normalized();
                 Angle = angle;
                 Radius = radius;
+                CircleLineSegmentNumber = quality;
             }
 
             public Polygon ToPolygon(int offset = 0)

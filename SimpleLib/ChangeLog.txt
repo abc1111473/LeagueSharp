@@ -1,6 +1,8 @@
 0.0.1.2:
 
 	Added Simple Geometry
+	Added Arc to the Simple Geometry
+	Added Moving and rotating polygons
 
 0.0.1.1:
 
