@@ -29,7 +29,7 @@ namespace SimpleLib
         public static readonly Items.Item RighteousGlory = ItemData.Righteous_Glory.GetItem();
         public static readonly Items.Item SeraphsEmbrace = ItemData.Seraphs_Embrace.GetItem();
         public static readonly Items.Item SeraphsEmbrace2 = ItemData.Seraphs_Embrace2.GetItem();
-        public static readonly Items.Item SwordOfTheDivine = ItemData.Sword_of_the_Divine.GetItem();
+        //public static readonly Items.Item SwordOfTheDivine = ItemData.Sword_of_the_Divine.GetItem();
         public static readonly Items.Item TalismanOfAscension = ItemData.Talisman_of_Ascension.GetItem();
         public static readonly Items.Item TwinShadows = ItemData.Twin_Shadows.GetItem();
         public static readonly Items.Item TwinShadows2 = ItemData.Twin_Shadows2.GetItem();
@@ -42,18 +42,18 @@ namespace SimpleLib
         public static readonly Items.Item StealthWard = ItemData.Stealth_Ward.GetItem();
         public static readonly Items.Item VisionWard = ItemData.Vision_Ward.GetItem();
         public static readonly Items.Item OraclesExtract = ItemData.Oracles_Extract.GetItem();
-        public static readonly Items.Item OraclesElixir = ItemData.Oracles_Elixir.GetItem();
+        //public static readonly Items.Item OraclesElixir = ItemData.Oracles_Elixir.GetItem();
         public static readonly Items.Item CrystallineFlask = ItemData.Crystalline_Flask.GetItem();
         public static readonly Items.Item Sightstone = ItemData.Sightstone.GetItem();
         public static readonly Items.Item RubySightstone = ItemData.Ruby_Sightstone.GetItem();
-        public static readonly Items.Item ElixirOfAgility = ItemData.Elixir_of_Agility.GetItem();
-        public static readonly Items.Item ElixirOfBrilliance = ItemData.Elixir_of_Brilliance.GetItem();
-        public static readonly Items.Item ElixirOfFortitude = ItemData.Elixir_of_Fortitude.GetItem();
+        //public static readonly Items.Item ElixirOfAgility = ItemData.Elixir_of_Agility.GetItem();
+        //public static readonly Items.Item ElixirOfBrilliance = ItemData.Elixir_of_Brilliance.GetItem();
+        //public static readonly Items.Item ElixirOfFortitude = ItemData.Elixir_of_Fortitude.GetItem();
         public static readonly Items.Item ElixirOfIron = ItemData.Elixir_of_Iron.GetItem();
         public static readonly Items.Item ElixirOfRuin = ItemData.Elixir_of_Ruin.GetItem();
         public static readonly Items.Item ElixirOfSorcery = ItemData.Elixir_of_Sorcery.GetItem();
         public static readonly Items.Item ElixirOfWrath = ItemData.Elixir_of_Wrath.GetItem();
-        public static readonly Items.Item PoroSnax = ItemData.PoroSnax.GetItem();
+        //public static readonly Items.Item PoroSnax = ItemData.PoroSnax.GetItem();
         public static readonly Items.Item TotalBiscuitOfRejuvenation = ItemData.Total_Biscuit_of_Rejuvenation.GetItem();
         public static readonly Items.Item TotalBiscuitOfRejuvenation2 = ItemData.Total_Biscuit_of_Rejuvenation2.GetItem();
 

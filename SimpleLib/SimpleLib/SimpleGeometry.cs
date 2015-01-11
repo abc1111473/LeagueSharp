@@ -8,7 +8,6 @@ using Color = System.Drawing.Color;
 using Path = System.Collections.Generic.List<ClipperLib.IntPoint>;
 using Paths = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
 using GamePath = System.Collections.Generic.List<SharpDX.Vector2>;
-using Matrix = System.Drawing.Drawing2D.Matrix;
 
 namespace SimpleLib
 {
@@ -164,7 +163,7 @@ namespace SimpleLib
                 DrawPolygon(a, color, width);
             }
 
-            public static void DrawLine(Line line, Color color, int width)
+            public static void DrawLine(Line line, Color color, int width = 1)
             {
                 var from = Drawing.WorldToScreen(line.LineStart.To3D());
                 var to = Drawing.WorldToScreen(line.LineEnd.To3D());
@@ -319,7 +318,7 @@ namespace SimpleLib
 
             public void ChangeLength(float newLenght)
             {
-                LineEnd = LineEnd.Normalized() * newLenght;
+                LineEnd = (LineEnd - LineStart).Normalized() * newLenght + LineStart;
                 Length = newLenght;
             }
 

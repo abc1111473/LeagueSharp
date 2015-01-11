@@ -2,6 +2,7 @@
 using LeagueSharp;
 using LeagueSharp.Common;
 
+
 namespace SimpleLib
 {
     public class SkinManager
@@ -20,8 +21,9 @@ namespace SimpleLib
                 return;
             }
 
-            menu.AddItem(new MenuItem(ObjectManager.Player.ChampionName, "Enable Skin Changer").SetValue(true));
-            menu.AddItem(
+            _sMenu.AddItem(new MenuItem(ObjectManager.Player.ChampionName, "Enable Skin Changer").SetValue(true));
+
+            _sMenu.AddItem(
                 new MenuItem(ObjectManager.Player.ChampionName, "Skins").SetValue(
                     new StringList(_skins.ToArray())));
             _selectedSkin = _sMenu.Item(ObjectManager.Player.ChampionName).GetValue<StringList>().SelectedIndex;
@@ -48,7 +50,7 @@ namespace SimpleLib
         private void GenerateSkinPacket(int skinNumber)
         {
             GamePacket model =
-                Packet.S2C.UpdateModel.Encoded(
+                 Packet.S2C.UpdateModel.Encoded(
                     new Packet.S2C.UpdateModel.Struct(
                         ObjectManager.Player.NetworkId, skinNumber, ObjectManager.Player.ChampionName));
             model.Process();
