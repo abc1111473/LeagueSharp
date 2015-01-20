@@ -259,7 +259,6 @@ namespace SimpleLib
             Drawing.OnDraw += Drawing_OnDraw;
             Obj_AI_Base.OnProcessSpellCast += Obj_AI_Base_OnProcessSpellCast;
             GameObject.OnCreate += Obj_SpellMissile_OnCreate;
-            Obj_AI_Hero.OnInstantStopAttack += ObjAiHeroOnOnInstantStopAttack;
         }
 
         public static void DisableSimpleOrbWalker()
@@ -268,7 +267,6 @@ namespace SimpleLib
             Drawing.OnDraw -= Drawing_OnDraw;
             Obj_AI_Base.OnProcessSpellCast -= Obj_AI_Base_OnProcessSpellCast;
             GameObject.OnCreate -= Obj_SpellMissile_OnCreate;
-            Obj_AI_Hero.OnInstantStopAttack -= ObjAiHeroOnOnInstantStopAttack;
         }
 
         /// <summary>
@@ -770,14 +768,6 @@ namespace SimpleLib
             else
             {
                 FireOnAttack(unit, (Obj_AI_Base)spell.Target);
-            }
-        }
-
-        private static void ObjAiHeroOnOnInstantStopAttack(Obj_AI_Base sender, GameObjectInstantStopAttackEventArgs args)
-        {
-            if (sender.IsValid && sender.IsMe && (args.BitData & 1) == 0 && ((args.BitData >> 4) & 1) == 1)
-            {
-                ResetAutoAttackTimer();
             }
         }
 
