@@ -1,5 +1,6 @@
 ﻿using LeagueSharp;
 using LeagueSharp.Common;
+using LeagueSharp.Common.Data;
 
 namespace SimpleLib
 {
